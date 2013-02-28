@@ -1,1 +1,4 @@
 etc/mysql/conf.d/mariadb.cnf
+etc/mysql/my.cnf
+usr/share/mysql-common/internal-use-only
+usr/share/lintian/overrides/mysql-common
