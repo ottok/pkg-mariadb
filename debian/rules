@@ -24,9 +24,10 @@ DEB_UPSTREAM_VERSION_MAJOR_MINOR := $(shell echo $(DEB_UPSTREAM_VERSION) | sed -
 DISTRIBUTION = $(shell lsb_release -i -s)
 RELEASE = $(shell lsb_release -r -s | sed 's/\..*//' )
 
-if [ "$(DISTRIBUTION)" = "Ubuntu" ]; then \
-  RELEASE = $(shell lsb_release -r -s)
-fi
+# TODO: rewrite into make syntax
+#if [ "$(DISTRIBUTION)" = "Ubuntu" ]; then \
+#  RELEASE = $(shell lsb_release -r -s)
+#fi
 
 MAKE_J = -j$(shell if [ -f /proc/cpuinfo ] ; then grep -c processor.* /proc/cpuinfo ; else echo 1 ; fi)
 ifeq (${MAKE_J}, -j0)
@@ -206,12 +207,14 @@ install: build
 	cp debian/mariadb-server-5.5.mysql-server.logrotate $$d/_etc_logrotate.d_mysql-server; \
 	cp debian/additions/debian-start $$d/_etc_mysql_debian-start;
 
-        if [ "$(DISTRIBUTION)" = "Ubuntu" ]; then \
-                # install AppArmor profile
-	        install -D -m 644 debian/apparmor-profile $(TMP)/etc/apparmor.d/usr.sbin.mysqld
-	        # install Apport hook
-	        install -D -m 644 debian/mariadb-server-5.5.py $(TMP)/usr/share/apport/package-hooks/source_mariadb-5.5.py
-        fi
+        # TODO: rewrite into make syntax
+        # if [ "$(DISTRIBUTION)" = "Ubuntu" ]; then \
+        #        # install AppArmor profile
+	#        install -D -m 644 debian/apparmor-profile $(TMP)/etc/apparmor.d/usr.sbin.mysqld
+	#        # install Apport hook
+	#        install -D -m 644 debian/mariadb-server-5.5.py $(TMP)/usr/share/apport/package-hooks/source_mariadb-5.5.py
+        #fi
+
 	dh_movefiles
 
 # Build architecture-independent files here.
