@@ -1,3 +1,7 @@
 version=3
 opts="uversionmangle=s/-(rc|beta)/$1/" \
-  ftp://sunsite.informatik.rwth-aachen.de/pub/mirror/www.mysql.com/Downloads/MySQL-5.1/mysql-([\d\.]*(?:-beta|-rc)?).tar.gz debian
+   ftp://ftp.osuosl.org/pub/mariadb/mariadb-5.([\d\.]*(?:-beta|-rc)?)/kvm-tarbake-jaunty-x86/mariadb-5.([\d\.]*(?:-beta|-rc)?).tar.gz \
+   debian uupdate
+
+# Added string "-5." in path as MariaDB has release series 5.x and 10.x in parallel,
+# and we want uscan to check for updates only in the 5-series.
