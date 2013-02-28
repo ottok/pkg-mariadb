@@ -1,0 +1,10 @@
+*** mariadb-server-5.5.postrm	2013-02-28 09:41:43.969994431 +0200
+--- ../../mariadb-server-5.5.postrm	2013-02-28 09:41:43.969994431 +0200
+*************** fi
+*** 80,84 ****
+  
+- if [ "$1" = "purge" ] ; then
+-      rm -f /etc/apparmor.d/force-complain/usr.sbin.mysqld >/dev/null 2>&1 || true
+- fi
+  # no DEBHELPER here, "update-rc.d remove" fails if mysql-server-5.1 is installed
+--- 80,81 ----
