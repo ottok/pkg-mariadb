@@ -196,7 +196,7 @@ install: build
 
 	# lintian overrides
 	mkdir -p $(TMP)/usr/share/lintian/overrides/
-        cp debian/mariadb-common.lintian-overrides      $(TMP)/usr/share/lintian/overrides/mariadb-common
+	cp debian/mariadb-common.lintian-overrides     $(TMP)/usr/share/lintian/overrides/mariadb-common
 	cp debian/mariadb-server-5.5.lintian-overrides $(TMP)/usr/share/lintian/overrides/mariadb-server-5.5
 	cp debian/mariadb-client-5.5.lintian-overrides $(TMP)/usr/share/lintian/overrides/mariadb-client-5.5
 
