@@ -3,147 +3,125 @@
 export DH_VERBOSE=1
 export DEB_BUILD_HARDENING=1
 
-PACKAGE=mariadb-5.5
+PACKAGE:=mariadb-5.5
 
 include /usr/share/dpatch/dpatch.make
 
-TMP=$(CURDIR)/debian/tmp/
+TMP:=$(CURDIR)/debian/tmp/
 
-ARCH = $(shell dpkg-architecture -qDEB_BUILD_ARCH)
-ARCH_OS = $(shell dpkg-architecture -qDEB_BUILD_ARCH_OS)
+ARCH := $(shell dpkg-architecture -qDEB_BUILD_ARCH)
+ARCH_OS := $(shell dpkg-architecture -qDEB_BUILD_ARCH_OS)
 DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEBVERSION = $(shell dpkg-parsechangelog | awk '/^Version: / { print $$2 }' | sed 's/^.*-//' )
+DEB_BUILD_GNU_SYSTEM ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_SYSTEM)
+DEBVERSION := $(shell dpkg-parsechangelog | awk '/^Version: / { print $$2 }' | sed 's/^.*-//' )
+
+ifneq (,$(filter $(ARCH), i386 kfreebsd-i386 hurd-i386))
+    USE_THIS_GCC_VERSION:=-4.4
+endif
+
+export MYSQL_BUILD_CC=$(DEB_HOST_GNU_TYPE)-gcc$(USE_THIS_GCC_VERSION)
+export MYSQL_BUILD_CXX=$(DEB_HOST_GNU_TYPE)-g++$(USE_THIS_GCC_VERSION)
 
 DEB_SOURCE_PACKAGE ?= $(strip $(shell egrep '^Source: ' debian/control | cut -f 2 -d ':'))
 DEB_VERSION ?= $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
 DEB_NOEPOCH_VERSION ?= $(shell echo $(DEB_VERSION) | cut -d: -f2-)
 DEB_UPSTREAM_VERSION ?= $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//')
 DEB_UPSTREAM_VERSION_MAJOR_MINOR := $(shell echo $(DEB_UPSTREAM_VERSION) | sed -r -n 's/^([0-9]+\.[0-9]+).*/\1/p')
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
-DISTRIBUTION = $(shell lsb_release -i -s)
-RELEASE = $(shell lsb_release -r -s | sed 's/\..*//' )
+DISTRIBUTION := $(shell lsb_release -i -s)
 
-# TODO: rewrite into make syntax
-#if [ "$(DISTRIBUTION)" = "Ubuntu" ]; then \
-#  RELEASE = $(shell lsb_release -r -s)
-#fi
-
-MAKE_J = -j$(shell if [ -f /proc/cpuinfo ] ; then grep -c processor.* /proc/cpuinfo ; else echo 1 ; fi)
-ifeq (${MAKE_J}, -j0)
-  MAKE_J = -j1
-endif
-
-MAKE_TEST_TARGET=test-force
+MAKE_TEST_TARGET:=test-force
 ifneq ($(findstring fulltest,$(DEB_BUILD_OPTIONS)),)
 # make test-bt is the testsuite run by the MySQL build team 
 # before a release, but it is long
-    MAKE_TEST_TARGET=test-bt
+    MAKE_TEST_TARGET:=test-bt
 endif
 
-USE_ASSEMBLER=--enable-assembler 
+USE_ASSEMBLER:=--enable-assembler 
 
-ifneq (,$(filter $(ARCH), amd64 i386 ia64 s390))
-    TESTSUITE_FAIL_CMD=exit 1
+ifneq (,$(filter $(ARCH), amd64 i386 kfreebsd-i386))
+    TESTSUITE_FAIL_CMD:=exit 1
 else
-    TESTSUITE_FAIL_CMD=true
+    TESTSUITE_FAIL_CMD:=true
 endif
 
-BUILDDIR = builddir
+BUILDDIR := builddir
 builddir = $(BUILDDIR)
 
 # This causes seg11 crashes if LDAP is used for groups in /etc/nsswitch.conf
 # so it is disabled by default although, according to MySQL, it brings >10%
 # performance gain if enabled. See #299382.
 ifeq ($(STATIC_MYSQLD), 1)
-    USE_STATIC_MYSQLD=--with-mysqld-ldflags=-all-static
+    USE_STATIC_MYSQLD:=--with-mysqld-ldflags=-all-static
 endif
 
-configure: patch configure-stamp
+override_dh_auto_clean:
+	@echo "RULES.$@"
+	dh_testdir 
+	dh_testroot
+	[ ! -d mysql-test/var ] || rm -rf mysql-test/var
+	rm -rf $(BUILDDIR)
+	debconf-updatepo
+
+override_dh_prep: 
+
 configure-stamp:
 	@echo "RULES.$@"
 	dh_testdir
-
-ifneq ($(ARCH_OS),hurd)
-	if [ ! -d /proc/self ]; then echo "/proc IS NEEDED" 1>&2; exit 1; fi 
-endif
-
 	( test -d $(builddir) || mkdir $(builddir) ) && cd $(builddir) && \
-	sh -c 'PATH=$${MYSQL_BUILD_PATH:-"/bin:/usr/bin:/usr/local/bin"} \
-			CC=$${MYSQL_BUILD_CC:-gcc} \
-			CFLAGS=$${MYSQL_BUILD_CFLAGS:-"-O2 -fno-omit-frame-pointer -g -pipe -Wall -Wno-uninitialized $$(case `lsb_release -sc` in (lenny) echo -DWORKAROUND_GCC_4_3_2_BUG ;; esac)"} \
-			CXX=$${MYSQL_BUILD_CXX:-g++} \
-			CXXFLAGS=$${MYSQL_BUILD_CXXFLAGS:-"-O2 -fno-omit-frame-pointer -g -pipe -Wall -Wno-uninitialized"} \
-		cmake .. \
-		-DMYSQL_SERVER_SUFFIX="-$(DEBVERSION)" \
-		-DBUILD_CONFIG=mysql_release \
-		-DCOMPILATION_COMMENT="mariadb.org binary distribution" \
-		-DSYSTEM_TYPE="debian-linux-gnu" \
-		-DDEB=debian'
-		# -DDEB=ubuntu ever needed?
-
+	sh -c  'PATH=$${MYSQL_BUILD_PATH:-"/bin:/usr/bin"} \
+	    	CC=$${MYSQL_BUILD_CC:-gcc} \
+		CFLAGS=$${MYSQL_BUILD_CFLAGS:-"-O2 -DBIG_JOINS=1 -fno-strict-aliasing"} \
+	    	CXX=$${MYSQL_BUILD_CXX:-g++} \
+	    	CXXFLAGS=$${MYSQL_BUILD_CXXFLAGS:-"-O3 -DBIG_JOINS=1 -felide-constructors -fno-exceptions -fno-rtti -fno-strict-aliasing"} \
+	    cmake -DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_VERBOSE_MAKEFILE=ON \
+	       	-DMYSQL_USER=mysql \
+		$(USE_STATIC_MYSQLD) \
+	    -DCOMPILATION_COMMENT="($(DISTRIBUTION))" \
+	    -DMYSQL_SERVER_SUFFIX="-$(DEBVERSION)" \
+	    -DSYSTEM_TYPE="debian-$(DEB_BUILD_GNU_SYSTEM)" \
+	    -DBUILD_CONFIG=mysql_release \
+	    -DINSTALL_LIBDIR=lib/$(DEB_HOST_MULTIARCH) \
+	    -DINSTALL_PLUGINDIR=lib/mysql/plugin \
+		-DDEB=debian ..'
 	touch $@
 
-build: build-stamp
-
-build-stamp: configure
+build-stamp:
 	@echo "RULES.$@"
-	dh_testdir
+	cd $(builddir) && $(MAKE) $(AM_EXTRA_MAKEFLAGS)
+	touch $@
 
-	cd $(builddir) && $(MAKE) $(MAKE_J) $(AM_EXTRA_MAKEFLAGS)
-
+override_dh_auto_test:
+	@echo "RULES.$@"
 ifeq ($(findstring nocheck,$(DEB_BUILD_OPTIONS)),)
 	# Don't know why the following is necessary...
 	cp unittest/unit.pl $(builddir)/unittest/
 	cp -r mysql-test/* $(builddir)/mysql-test/
 	cp -r sql/share/* $(builddir)/sql/share/
 	cp -r scripts/*sql $(builddir)/scripts/
-	if [ ! -f testsuite-stamp ] ; then \
-	  cd $(builddir) && $(MAKE) $(MAKE_TEST_TARGET) || $(TESTSUITE_FAIL_CMD) ; \
-	fi
+	cd $(builddir) && $(MAKE) $(MAKE_TEST_TARGET) || $(TESTSUITE_FAIL_CMD) ; 
 endif
 
-	touch testsuite-stamp
+override_dh_auto_install: auto_install-stamp
 
-	touch build-stamp
-
-clean: clean-patched unpatch
-	rm -rf debian/patched
-clean-patched:
-	@echo "RULES.clean-patched"
-	dh_testdir 
-	dh_testroot
-	rm -f configure-stamp*
-	rm -f build-stamp*
-	rm -f testsuite-stamp
-	#
-	[ ! -f Makefile ] || $(MAKE) clean
-	[ ! -d mysql-test/var ] || rm -rf mysql-test/var
-	#
-	rm -rf $(BUILDDIR)
-
-	debconf-updatepo
-	dh_clean -v
-
-
-install: build
+auto_install-stamp:
 	@echo "RULES.$@"
 	dh_testdir
 	dh_testroot
-	dh_clean -k
-	dh_installdirs
-
+	dh_prep
 	# some self written manpages which hopefully
 	# gets overwritten sooner or later with upstreams
 	mkdir -p $(TMP)/usr/share/man/man1/
 	mkdir -p $(TMP)/usr/share/man/man8/
 	cp debian/additions/*.1 $(TMP)/usr/share/man/man1/
 	mkdir -p $(TMP)/etc/mysql/conf.d/
+	touch $(TMP)/etc/mysql/conf.d/.keepme
 	cp debian/additions/mysqld_safe_syslog.cnf $(TMP)/etc/mysql/conf.d/
-
 	# make install (trailing slash needed for innobase)
 	cd $(builddir) && $(MAKE) install DESTDIR=$(TMP)/
-	#
 	# After installing, remove rpath to make lintian happy.
 	set +e; \
 	find ./debian/tmp/ -type f -print0 \
@@ -152,34 +130,26 @@ install: build
 		| cut -d: -f 1 \
 		| xargs --no-run-if-empty chrpath -d; \
 	set -e
-
-	# libmysqlclient-dev: forgotten header file since 3.23.25?
-	cp $(BUILDDIR)/include/my_config.h $(TMP)/usr/include/mysql/
-	cp include/my_dir.h $(TMP)/usr/include/mysql/
-
-	# mysql-common: We provide our own version of this package for
-	# completeness, but we can use an existing version; mariadb-specic
-	# stuff is in mariadb-common
-	install -d $(TMP)/etc/mysql
-	install -m 0644 debian/additions/my.cnf $(TMP)/etc/mysql/my.cnf
-
-	# mariadb-common: MariaDB-specific config stuff.
+	# mariadb-common
 	install -d $(TMP)/etc/mysql/conf.d
+	install -m 0644 debian/additions/my.cnf $(TMP)/etc/mysql/my.cnf
 	install -m 0644 debian/additions/mariadb.cnf $(TMP)/etc/mysql/conf.d/mariadb.cnf
-
+	# libmysqlclient_r is now a symlink to libmysqlclient. But it is
+	# created wrong by the cmake build system and points at
+	# libmysqlclient.so instead of the corresponding versioned lib.
+	for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so*` ; do \
+		rlib=`basename $$i | sed -e 's/libmysqlclient\./libmysqlclient_r./'` ;\
+		ln -sf `basename $$i` $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/$$rlib ;\
+	done
 	# mariadb-client
 	install -m 0755 debian/additions/mysqlreport $(TMP)/usr/bin/
 	install -m 0755 debian/additions/innotop/innotop $(TMP)/usr/bin/
 	install -m 0644 debian/additions/innotop/innotop.1 $(TMP)/usr/share/man/man1/
 
 	# mariadb-server
-	install -m 0755 $(BUILDDIR)/scripts/mysqld_safe $(TMP)/usr/bin/mysqld_safe
 	mkdir -p $(TMP)/usr/share/doc/mariadb-server-5.5/examples
-	# We have a sane my.cnf, cruft not needed (remove my-*.cnf and config-*.cnf)
-	#  $(TMP)/usr/share/mysql/*cnf      $(TMP)/usr/share/doc/mariadb-server-5.5/examples/
-	rm -vf $(TMP)/usr/share/mysql/my-*.cnf \
-	       $(TMP)/usr/share/mysql/config-*.cnf \
-	       $(TMP)/usr/share/mysql/mi_test_all* \
+	mv $(TMP)/usr/share/mysql/*cnf 	    $(TMP)/usr/share/doc/mysql-server-5.5/examples/
+	rm -vf $(TMP)/usr/share/mysql/mi_test_all* \
 	       $(TMP)/usr/share/mysql/mysql-log-rotate \
 	       $(TMP)/usr/share/mysql/mysql.server \
 	       $(TMP)/usr/share/mysql/binary-configure
@@ -214,7 +184,9 @@ install: build
 	#        # install Apport hook
 	#        install -D -m 644 debian/mariadb-server-5.5.py $(TMP)/usr/share/apport/package-hooks/source_mariadb-5.5.py
         #fi
+	touch $@
 
+override_dh_install:
 	dh_movefiles
 
 # Build architecture-independent files here.
