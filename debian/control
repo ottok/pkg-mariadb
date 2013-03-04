@@ -28,7 +28,7 @@ Description: MariaDB database client library
  This package includes the client library.
 
 Package: libmariadbd-dev
-Architecture: any
+Architecture: all
 Section: libdevel
 Depends: libmariadbclient-dev (>= ${source:Version}), ${misc:Depends}
 Provides: libmysqld-dev
@@ -213,7 +213,7 @@ Package: mariadb-test
 Section: database
 Architecture: all
 Depends: mariadb-test-5.5, ${misc:Depends}
-Description: MariaDB database regression test suite (metapackage depending on the latest version)
+Description: MariaDB database regression test suite (metapackage for latest version)
  This is an empty package that depends on the current "best" version of
  mariadb-test (currently mariadb-test-5.5), as determined by the MariaDB
  maintainers.
