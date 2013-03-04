@@ -254,7 +254,7 @@ build-arch: build-stamp
 build-indep: build-stamp auto_install-stamp
 
 get-orig-source:
-        uscan --force-download --verbose
+	uscan --force-download --verbose
 
 .PHONY: clean clean-patched configure build binary binary-indep binary-arch install patch unpatch
 
