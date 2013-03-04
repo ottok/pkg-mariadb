@@ -1,9 +1,9 @@
 Source: mariadb-5.5
 Section: database
 Priority: optional
-Maintainer: Otto Kekäläinen <otto@seravo.fi>
-XSBC-Original-Maintainer: Maria Developers <maria-developers@lists.launchpad.net>
-Uploaders: Clint Byrum <clint@ubuntu.com>
+Maintainer: Debian MySQL Maintainers <pkg-mysql-maint@lists.alioth.debian.org>
+Uploaders: Norbert Tretkowski <norbert@tretkowski.de>,
+ Clint Byrum <clint@ubuntu.com>, Nicholas Bamber <nicholas@periapt.co.uk>
 Build-Depends: libtool (>= 1.4.2-7), procps | hurd,  debhelper, file (>= 3.28), libncurses5-dev (>= 5.0-6), perl (>= 5.6.0), libwrap0-dev (>= 7.6-8.3), zlib1g-dev (>= 1:1.1.3-5), libreadline-dev | libreadline5-dev | libreadline-gplv2-dev, libevent-dev, libssl-dev, libpam0g-dev, psmisc, po-debconf, chrpath, automake1.9, doxygen, texlive-latex-base, ghostscript | gs-gpl, dpatch, gawk, bison, lsb-release, hardening-wrapper, libaio-dev
 Standards-Version: 3.9.3
 Homepage: http://mariadb.org/
@@ -45,7 +45,7 @@ Description: MariaDB embedded database development files
 Package: libmariadbclient-dev
 Architecture: any
 Section: libdevel
-Depends: libmariadbclient18 (>= ${source:Version}), zlib1g-dev, , ${shlibs:Depends}, ${misc:Depends}
+Depends: libmariadbclient18 (= ${binary:Version}), zlib1g-dev, , ${shlibs:Depends}, ${misc:Depends}
 Replaces: libmariadbclient16-dev, libmysqlclient16-dev
 Conflicts: libmysqlclient-dev, libmariadbclient16-dev, libmysqlclient14-dev, libmysqlclient12-dev, libmysqlclient10-dev, libmysqlclient15-dev, libmysqlclient16-dev
 Provides: libmysqlclient-dev
@@ -147,7 +147,7 @@ Description: MariaDB database core server files
 Package: mariadb-test-5.5
 Section: database
 Architecture: all
-Depends: mariadb-server-5.5 (= ${source:Version}), mariadb-client-5.5 (= ${source:Version})
+Depends: mariadb-server-5.5 (= ${source:Version}), mariadb-client-5.5 (= ${source:Version}), ${misc:Depends}
 Conflicts: mariadb-test (<< ${source:Version}),
     mariadb-test-5.1, mariadb-test-5.2, mariadb-test-5.3
 Replaces: mariadb-test (<< ${source:Version}),
@@ -212,7 +212,7 @@ Description: MariaDB database client (metapackage depending on the latest versio
 Package: mariadb-test
 Section: database
 Architecture: all
-Depends: mariadb-test-5.5
+Depends: mariadb-test-5.5, ${misc:Depends}
 Description: MariaDB database regression test suite (metapackage depending on the latest version)
  This is an empty package that depends on the current "best" version of
  mariadb-test (currently mariadb-test-5.5), as determined by the MariaDB

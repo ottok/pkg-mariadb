@@ -1,4 +1,12 @@
-mariadb-5.5 (5.5.29) unstable; urgency=low
+mariadb-5.5 (5.5.29-1) unstable; urgency=low
+
+  * Non-maintainer upload
+  * New rules file made more in the lines of current MySQL packages
+  * Refined control file and fixed Lintian warnings
+
+ -- Otto Kekäläinen <otto@seravo.fi>  Mon, 04 Mar 2013 17:51:22 +0200
+
+mariadb-5.5 (5.5.29) UNRELEASED; urgency=low
 
   * Updated contents in debian/ to follow Debian standards
   * Deprecated autobuild-dep.sh
