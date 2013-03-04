@@ -256,16 +256,7 @@ build-arch: build-stamp
 build-indep: build-stamp
       
 get-orig-source:
-	@wget -nv -T10 -t3 \
-	  -O /tmp/mysql-$(DEB_UPSTREAM_VERSION).tar.gz \
-	  http://ftp.gwdg.de/pub/misc/mysql/Downloads/MySQL-$(DEB_UPSTREAM_VERSION_MAJOR_MINOR)/mysql-$(DEB_UPSTREAM_VERSION).tar.gz
-	@tar xfz /tmp/mysql-$(DEB_UPSTREAM_VERSION).tar.gz -C /tmp
-	@rm -rf /tmp/mysql-$(DEB_UPSTREAM_VERSION)/Docs
-	@rm -rf /tmp/mysql-$(DEB_UPSTREAM_VERSION)/debian
-	@mv /tmp/mysql-$(DEB_UPSTREAM_VERSION) /tmp/$(DEB_SOURCE_PACKAGE)-$(DEB_UPSTREAM_VERSION).orig
-	@cd /tmp ; tar czf $(DEB_SOURCE_PACKAGE)_$(DEB_UPSTREAM_VERSION).orig.tar.gz $(DEB_SOURCE_PACKAGE)-$(DEB_UPSTREAM_VERSION).orig
-	@rm -f /tmp/mysql-$(DEB_UPSTREAM_VERSION).tar.gz
-	@rm -rf /tmp/$(DEB_SOURCE_PACKAGE)-$(DEB_UPSTREAM_VERSION).orig
+        uscan --force-download --verbose
 
 .PHONY: clean clean-patched configure build binary binary-indep binary-arch install patch unpatch
 
