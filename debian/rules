@@ -251,6 +251,10 @@ source diff:
 
 binary:	binary-indep binary-arch
 
+build: build-arch build-indep
+      build-arch: build-stamp
+      build-indep: build-stamp
+      
 get-orig-source:
 	@wget -nv -T10 -t3 \
 	  -O /tmp/mysql-$(DEB_UPSTREAM_VERSION).tar.gz \
