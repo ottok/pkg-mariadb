@@ -38,11 +38,6 @@ ifneq ($(findstring fulltest,$(DEB_BUILD_OPTIONS)),)
 # before a release, but it is long
     MAKE_TEST_TARGET:=test-bt
 endif
-ifeq ($(ARCH_OS),hurd)
-# Tests not fully working under Hurd
-# See http://bugs.mysql.com/bug.php?id=64685
-    MAKE_TEST_TARGET:=test
-endif
 
 USE_ASSEMBLER:=--enable-assembler 
 
@@ -62,7 +57,7 @@ ifeq ($(STATIC_MYSQLD), 1)
     USE_STATIC_MYSQLD:=--with-mysqld-ldflags=-all-static
 endif
 
-override_dh_auto_clean: 
+override_dh_auto_clean:
 	@echo "RULES.$@"
 	dh_testdir 
 	dh_testroot
@@ -96,8 +91,6 @@ configure-stamp:
 
 build-stamp:
 	@echo "RULES.$@"
-	--exclude=debian . \
-	--transform="s,^\./,mariadb-5.5/,"
 	cd $(builddir) && $(MAKE) $(AM_EXTRA_MAKEFLAGS)
 	touch $@
 
