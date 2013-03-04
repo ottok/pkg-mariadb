@@ -167,8 +167,8 @@ Suggests: tinyca, mailx, mariadb-test
 Recommends: libhtml-template-perl
 Pre-Depends: mariadb-common, adduser (>= 3.40), debconf
 Depends: mariadb-client-5.5 (>= ${source:Version}), libdbi-perl, perl (>= 5.6), ${shlibs:Depends}, ${misc:Depends}, psmisc, passwd, lsb-base (>= 3.0-10), mariadb-server-core-5.5 (>= ${binary:Version})
-Provides: mariadb-server, mysql-server, virtual-mysql-server
-Conflicts: mariadb-server (<< ${source:Version}), mysql-server (<< ${source:Version}),
+Provides: mariadb-server, virtual-mysql-server
+Conflicts: mariadb-server (<< ${source:Version}), mysql-server,
     mysql-server-4.1, mysql-server-5.0, mysql-server-5.1, mysql-server-5.5,
     mariadb-server-5.1, mariadb-server-5.2, mariadb-server-5.3
 Replaces: mariadb-server (<< ${source:Version}), mysql-server (<< ${source:Version}),
@@ -187,10 +187,7 @@ Description: MariaDB database server binaries
 Package: mariadb-server
 Section: database
 Architecture: all
-Depends: mariadb-server-5.5, ${misc:Depends}
-Provides: mysql-server
-Conflicts: mysql-server
-Replaces: mysql-server
+Depends: mariadb-server-5.5
 Description: MariaDB database server (metapackage depending on the latest version)
  This is an empty package that depends on the current "best" version of
  mariadb-server (currently mariadb-server-5.5), as determined by the MariaDB
