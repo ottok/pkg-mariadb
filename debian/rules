@@ -105,8 +105,6 @@ ifeq ($(findstring nocheck,$(DEB_BUILD_OPTIONS)),)
 	cd $(builddir) && $(MAKE) $(MAKE_TEST_TARGET) || $(TESTSUITE_FAIL_CMD) ; 
 endif
 
-override_dh_auto_install: auto_install-stamp
-
 auto_install-stamp:
 	@echo "RULES.$@"
 	dh_testdir
@@ -253,8 +251,8 @@ binary:	binary-indep binary-arch
 
 build: configure-stamp build-arch build-indep
 build-arch: build-stamp
-build-indep: build-stamp
-      
+build-indep: build-stamp auto_install-stamp
+
 get-orig-source:
         uscan --force-download --verbose
 
