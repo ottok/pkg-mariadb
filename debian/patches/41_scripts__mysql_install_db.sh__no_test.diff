@@ -7,14 +7,16 @@
 
 @DPATCH@
 
---- mysql-dfsg-5.1-5.1.23rc.orig/scripts/mysql_install_db.sh	2008-01-29 22:41:20.000000000 +0100
-+++ mysql-dfsg-5.1-5.1.23rc/scripts/mysql_install_db.sh	2008-02-28 10:08:11.000000000 +0100
-@@ -306,7 +306,7 @@
+Index: pkg-mariadb/scripts/mysql_install_db.sh
+===================================================================
+--- pkg-mariadb.orig/scripts/mysql_install_db.sh	2013-03-04 18:36:16.460287330 +0200
++++ pkg-mariadb/scripts/mysql_install_db.sh	2013-03-04 21:33:48.649503393 +0200
+@@ -372,7 +372,7 @@
  fi
  
  # Create database directories
 -for dir in "$ldata" "$ldata/mysql" "$ldata/test"
 +for dir in "$ldata" "$ldata/mysql"
  do
-   if test ! -d $dir
+   if test ! -d "$dir"
    then

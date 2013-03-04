@@ -7,8 +7,10 @@
 
 @DPATCH@
 
---- a/scripts/mysqld_safe.sh	2013-01-11 16:02:41 +0000
-+++ b/scripts/mysqld_safe.sh	2013-01-11 16:03:14 +0000
+Index: pkg-mariadb/scripts/mysqld_safe.sh
+===================================================================
+--- pkg-mariadb.orig/scripts/mysqld_safe.sh	2013-03-04 21:31:34.855680653 +0200
++++ pkg-mariadb/scripts/mysqld_safe.sh	2013-03-04 21:31:45.000000000 +0200
 @@ -30,7 +30,6 @@
  syslog_tag_mysqld=mysqld
  syslog_tag_mysqld_safe=mysqld_safe
@@ -26,7 +28,7 @@
        ;;
      *)
        echo "Internal program error (non-fatal):" \
-@@ -758,6 +757,13 @@
+@@ -760,6 +759,13 @@
  fi
  
  #
@@ -40,4 +42,3 @@
  # Uncomment the following lines if you want all tables to be automatically
  # checked and repaired during startup. You should add sensible key_buffer
  # and sort_buffer values to my.cnf to improve check performance or require
-
