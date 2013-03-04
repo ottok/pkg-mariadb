@@ -251,9 +251,9 @@ source diff:
 
 binary:	binary-indep binary-arch
 
-build: build-arch build-indep
-      build-arch: build-stamp
-      build-indep: build-stamp
+build: configure-stamp build-arch build-indep
+build-arch: build-stamp
+build-indep: build-stamp
       
 get-orig-source:
 	@wget -nv -T10 -t3 \
