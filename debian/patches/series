@@ -1,0 +1,6 @@
+33_scripts__mysql_create_system_tables__no_test.diff
+38_scripts__mysqld_safe.sh__signals.diff
+41_scripts__mysql_install_db.sh__no_test.diff
+44_scripts__mysql_config__libs.diff
+50_mysql-test__db_test.diff
+61_replace_dash_with_bash_mbug675185.diff

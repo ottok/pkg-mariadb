@@ -5,7 +5,7 @@ export DEB_BUILD_HARDENING=1
 
 PACKAGE:=mariadb-5.5
 
-include /usr/share/dpatch/dpatch.make
+include /usr/share/quilt/quilt.make
 
 TMP:=$(CURDIR)/debian/tmp/
 
