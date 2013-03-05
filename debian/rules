@@ -146,7 +146,7 @@ auto_install-stamp:
 
 	# mariadb-server
 	mkdir -p $(TMP)/usr/share/doc/mariadb-server-5.5/examples
-	mv $(TMP)/usr/share/mysql/*cnf 	    $(TMP)/usr/share/doc/mysql-server-5.5/examples/
+	mv $(TMP)/usr/share/mysql/*cnf 	    $(TMP)/usr/share/doc/mysql-server-5.5/examples/ # this line fails, no cnf files in that folder
 	rm -vf $(TMP)/usr/share/mysql/mi_test_all* \
 	       $(TMP)/usr/share/mysql/mysql-log-rotate \
 	       $(TMP)/usr/share/mysql/mysql.server \
@@ -188,7 +188,7 @@ override_dh_install:
 	dh_movefiles
 
 # Build architecture-independent files here.
-binary-indep: build install
+binary-indep: auto_install-stamp
 	@echo "RULES.binary-indep"
 	dh_testdir -i
 	dh_testroot -i
@@ -213,7 +213,7 @@ binary-indep: build install
 	dh_builddeb -i
 
 # Build architecture-dependent files here.
-binary-arch: build install
+binary-arch: auto_install-stamp
 	@echo "RULES.binary-arch"
 	dh_testdir 
 	dh_testroot
@@ -249,9 +249,7 @@ source diff:
 
 binary:	binary-indep binary-arch
 
-build: configure-stamp build-arch build-indep
-build-arch: build-stamp
-build-indep: build-stamp auto_install-stamp
+build: configure-stamp build-stamp
 
 get-orig-source:
 	uscan --force-download --verbose
