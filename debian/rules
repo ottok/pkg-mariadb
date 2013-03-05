@@ -67,6 +67,8 @@ override_dh_auto_clean:
 
 override_dh_prep: 
 
+# We explicitly set -DINSTALL_SUPPORTFILESDIR as it is incorrect in upstream
+# sources (will be fixed in 5.5.30).
 configure-stamp:
 	@echo "RULES.$@"
 	dh_testdir
@@ -78,7 +80,6 @@ configure-stamp:
 	    	CXXFLAGS=$${MYSQL_BUILD_CXXFLAGS:-"-O3 -DBIG_JOINS=1 -felide-constructors -fno-exceptions -fno-rtti -fno-strict-aliasing"} \
 	    cmake -DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_VERBOSE_MAKEFILE=ON \
-	       	-DMYSQL_USER=mysql \
 		$(USE_STATIC_MYSQLD) \
 	    -DCOMPILATION_COMMENT="($(DISTRIBUTION))" \
 	    -DMYSQL_SERVER_SUFFIX="-$(DEBVERSION)" \
@@ -86,6 +87,7 @@ configure-stamp:
 	    -DBUILD_CONFIG=mysql_release \
 	    -DINSTALL_LIBDIR=lib/$(DEB_HOST_MULTIARCH) \
 	    -DINSTALL_PLUGINDIR=lib/mysql/plugin \
+	    -DINSTALL_SUPPORTFILESDIR=share/mysql \
 		-DDEB=debian ..'
 	touch $@
 
@@ -146,7 +148,7 @@ auto_install-stamp:
 
 	# mariadb-server
 	mkdir -p $(TMP)/usr/share/doc/mariadb-server-5.5/examples
-	mv $(TMP)/usr/share/mysql/*cnf 	    $(TMP)/usr/share/doc/mysql-server-5.5/examples/ # this line fails, no cnf files in that folder
+	mv $(TMP)/usr/share/mysql/*cnf 	    $(TMP)/usr/share/doc/mariadb-server-5.5/examples/
 	rm -vf $(TMP)/usr/share/mysql/mi_test_all* \
 	       $(TMP)/usr/share/mysql/mysql-log-rotate \
 	       $(TMP)/usr/share/mysql/mysql.server \
@@ -166,7 +168,6 @@ auto_install-stamp:
 	mkdir -p $(TMP)/usr/share/lintian/overrides/
 	cp debian/mariadb-common.lintian-overrides     $(TMP)/usr/share/lintian/overrides/mariadb-common
 	cp debian/mariadb-server-5.5.lintian-overrides $(TMP)/usr/share/lintian/overrides/mariadb-server-5.5
-	cp debian/mariadb-client-5.5.lintian-overrides $(TMP)/usr/share/lintian/overrides/mariadb-client-5.5
 
 	# For 5.0 -> 5.5 transition
 	d=$(TMP)/usr/share/mysql-common/internal-use-only/; \
