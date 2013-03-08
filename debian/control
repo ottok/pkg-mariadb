@@ -28,7 +28,7 @@ Description: MariaDB database client library
  This package includes the client library.
 
 Package: libmariadbd-dev
-Architecture: all
+Architecture: any
 Section: libdevel
 Depends: libmariadbclient-dev (>= ${source:Version}), ${misc:Depends}
 Provides: libmysqld-dev
