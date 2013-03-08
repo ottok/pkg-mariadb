@@ -65,7 +65,8 @@ override_dh_auto_clean:
 	rm -rf $(BUILDDIR)
 	debconf-updatepo
 
-override_dh_prep: 
+override_dh_prep:
+        # why do we override this, it might be stopping the cleaning procedures before build
 
 configure-stamp:
 	@echo "RULES.$@"
@@ -183,9 +184,6 @@ auto_install-stamp:
 	#        install -D -m 644 debian/mariadb-server-5.5.py $(TMP)/usr/share/apport/package-hooks/source_mariadb-5.5.py
         #fi
 	touch $@
-
-override_dh_install:
-	dh_movefiles
 
 # Build architecture-independent files here.
 binary-indep: auto_install-stamp
