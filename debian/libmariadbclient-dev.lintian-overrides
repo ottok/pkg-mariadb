@@ -1,0 +1,2 @@
+# OK, newer Debian should support xz
+libmariadbd-dev: data.tar.xz-member-without-dpkg-pre-depends

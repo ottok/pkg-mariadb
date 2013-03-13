@@ -1,0 +1,7 @@
+#!/bin/bash -e
+
+#DEBHELPER#
+
+ldconfig
+
+exit 0

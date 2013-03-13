@@ -30,7 +30,7 @@ Description: MariaDB database client library
 Package: libmariadbd-dev
 Architecture: any
 Section: libdevel
-Pre-Depend: multiarch-support
+Pre-Depends: multiarch-support
 Depends: libmariadbclient-dev (>= ${source:Version}), ${misc:Depends}, ${shlibs:Depends}
 Provides: libmysqld-dev
 Conflicts: libmysqld-dev

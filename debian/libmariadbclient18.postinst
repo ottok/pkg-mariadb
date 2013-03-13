@@ -5,8 +5,9 @@
 
 #DEBHELPER#
 
+case "$1" in
+  configure)
+    ldconfig
+esac
+
 exit 0
-
-# vim: ts=4
-
-

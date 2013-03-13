@@ -1,5 +1,10 @@
 #!/bin/bash -e
 
-ldconfig
+#DEBHELPER#
+
+case "$1" in
+  configure)
+    ldconfig
+esac
 
 exit 0
