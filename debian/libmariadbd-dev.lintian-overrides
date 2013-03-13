@@ -1,0 +1,5 @@
+libmariadbd-dev: embedded-library usr/lib/x86_64-linux-gnu/libmysqld.so.18: libmysqlclient
+# OK, newer Debian should support xz
+libmariadbd-dev: data.tar.xz-member-without-dpkg-pre-depends
+# Check out http://www.debian.org/doc/debian-policy/ch-sharedlibs.html#s-sharedlibs-depends
+libmariadbd-dev: no-shlibs-control-file usr/lib/x86_64-linux-gnu/libmysqld.so.18

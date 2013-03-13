@@ -1,0 +1,5 @@
+#!/bin/bash -e
+
+ldconfig
+
+exit 0

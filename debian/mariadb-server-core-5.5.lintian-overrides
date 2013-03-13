@@ -1,0 +1,3 @@
+mariadb-server-core-5.5: embedded-library usr/sbin/mysqld: libmysqlclient
+# OK in neẃer Debian, includes support for xz
+mariadb-server-core-5.5: data.tar.xz-member-without-dpkg-pre-depends

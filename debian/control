@@ -30,7 +30,8 @@ Description: MariaDB database client library
 Package: libmariadbd-dev
 Architecture: any
 Section: libdevel
-Depends: libmariadbclient-dev (>= ${source:Version}), ${misc:Depends}
+Pre-Depend: multiarch-support
+Depends: libmariadbclient-dev (>= ${source:Version}), ${misc:Depends}, ${shlibs:Depends}
 Provides: libmysqld-dev
 Conflicts: libmysqld-dev
 Replaces: libmysqld-dev
@@ -148,7 +149,7 @@ Description: MariaDB database core server files
 Package: mariadb-test-5.5
 Section: database
 Architecture: any
-Depends: mariadb-server-5.5 (>= ${source:Version}), mariadb-client-5.5 (>= ${source:Version}), ${misc:Depends}
+Depends: mariadb-server-5.5 (>= ${source:Version}), mariadb-client-5.5 (>= ${source:Version}), ${misc:Depends}, ${shlibs:Depends}
 Conflicts: mariadb-test (<< ${source:Version}),
     mariadb-test-5.1, mariadb-test-5.2, mariadb-test-5.3
 Replaces: mariadb-test (<< ${source:Version}),

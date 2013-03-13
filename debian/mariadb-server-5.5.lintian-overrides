@@ -1,3 +1,7 @@
+mariadb-server-5.5: embedded-library usr/bin/mysqlbinlog: libmysqlclient
+# OK in neẃer Debian, includes support for xz
+mariadb-server-5.5: data.tar.xz-member-without-dpkg-pre-depends
+# Old error, please recheck:
 mariadb-server-5.5: command-with-path-in-maintainer-script postinst
 mariadb-server-5.5: possible-bashism-in-maintainer-script postinst:81 'p{("a".."z","A".."Z",0..9)[int(rand(62))]}'
 mariadb-server-5.5: possible-bashism-in-maintainer-script preinst:33 '${cmd/ */}'
