@@ -120,7 +120,6 @@ EOF
     set +e
     chown -R 0:0 $mysql_datadir
     chown -R mysql $mysql_statedir
-    chown -R mysql $mysql_rundir
     chown -R mysql:adm $mysql_newlogdir;	chmod 2750 $mysql_newlogdir;
     for i in log err; do
       touch             $mysql_logdir/mysql.$i
