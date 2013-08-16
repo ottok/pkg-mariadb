@@ -2130,7 +2130,14 @@ int cli_stmt_execute(MYSQL_STMT *stmt)
       DBUG_RETURN(1);
     }
 
-    net_clear(net, 1);				/* Sets net->write_pos */
+    if (net->vio)
+      net_clear(net, 1);          /* Sets net->write_pos */
+    else
+    {
+      set_stmt_errmsg(stmt, net);
+      DBUG_RETURN(1);             
+    }
+
     /* Reserve place for null-marker bytes */
     null_count= (stmt->param_count+7) /8;
     if (my_realloc_str(net, null_count + 1))
@@ -3193,7 +3200,7 @@ static void fetch_string_with_conversion(MYSQL_BIND *param, char *value,
   case MYSQL_TYPE_TIME:
   {
     MYSQL_TIME *tm= (MYSQL_TIME *)buffer;
-    str_to_time(value, length, tm, TIME_FUZZY_DATE, &err);
+    str_to_time(value, length, tm, 0, &err);
     *param->error= test(err);
     break;
   }
@@ -3202,7 +3209,7 @@ static void fetch_string_with_conversion(MYSQL_BIND *param, char *value,
   case MYSQL_TYPE_TIMESTAMP:
   {
     MYSQL_TIME *tm= (MYSQL_TIME *)buffer;
-    (void) str_to_datetime(value, length, tm, TIME_FUZZY_DATE, &err);
+    (void) str_to_datetime(value, length, tm, 0, &err);
     *param->error= test(err) && (param->buffer_type == MYSQL_TYPE_DATE &&
                                  tm->time_type != MYSQL_TIMESTAMP_DATE);
     break;
@@ -3325,9 +3332,7 @@ static void fetch_long_with_conversion(MYSQL_BIND *param, MYSQL_FIELD *field,
   case MYSQL_TYPE_DATETIME:
   {
     int error;
-    value= number_to_datetime(value, 0,
-                              (MYSQL_TIME *) buffer, TIME_FUZZY_DATE,
-                              &error);
+    value= number_to_datetime(value, 0, (MYSQL_TIME *) buffer, 0, &error);
     *param->error= test(error);
     break;
   }

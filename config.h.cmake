@@ -45,6 +45,7 @@
 #cmakedefine HAVE_IA64INTRIN_H 1
 #cmakedefine HAVE_IEEEFP_H 1
 #cmakedefine HAVE_INTTYPES_H 1
+#cmakedefine HAVE_KQUEUE 1
 #cmakedefine HAVE_LIMITS_H 1
 #cmakedefine HAVE_LINUX_UNISTD_H 1
 #cmakedefine HAVE_LOCALE_H 1
@@ -290,6 +291,7 @@
 #cmakedefine HAVE_THR_YIELD 1
 #cmakedefine HAVE_TIME 1
 #cmakedefine HAVE_TIMES 1
+#cmakedefine HAVE_UCONTEXT 1
 #cmakedefine HAVE_VALLOC 1
 #cmakedefine HAVE_VIDATTR 1
 #define HAVE_VIO_READ_BUFF 1

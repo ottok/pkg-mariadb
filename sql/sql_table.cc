@@ -1,6 +1,6 @@
 /*
-   Copyright (c) 2000, 2012, Oracle and/or its affiliates.
-   Copyright (c) 2010, 2011, Monty Program Ab
+   Copyright (c) 2000, 2013, Oracle and/or its affiliates.
+   Copyright (c) 2010, 2013, Monty Program Ab.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@
 #include "sql_show.h"
 #include "transaction.h"
 #include "datadict.h"  // dd_frm_type()
+#include "sql_audit.h"
 
 #ifdef __WIN__
 #include <io.h>
@@ -197,7 +198,6 @@ uint explain_filename(THD* thd,
                       uint to_length,
                       enum_explain_filename_mode explain_mode)
 {
-  uint res= 0;
   char *to_p= to;
   char *end_p= to_p + to_length;
   const char *db_name= NULL;
@@ -208,7 +208,8 @@ uint explain_filename(THD* thd,
   int  part_name_len= 0;
   const char *subpart_name= NULL;
   int  subpart_name_len= 0;
-  uint name_variant= NORMAL_PART_NAME;
+  uint part_type= NORMAL_PART_NAME;
+
   const char *tmp_p;
   DBUG_ENTER("explain_filename");
   DBUG_PRINT("enter", ("from '%s'", from));
@@ -227,17 +228,18 @@ uint explain_filename(THD* thd,
     table_name= tmp_p;
   }
   tmp_p= table_name;
-  while (!res && (tmp_p= strchr(tmp_p, '#')))
+  /* Look if there are partition tokens in the table name. */
+  while ((tmp_p= strchr(tmp_p, '#')))
   {
     tmp_p++;
     switch (tmp_p[0]) {
     case 'P':
     case 'p':
       if (tmp_p[1] == '#')
+      {
         part_name= tmp_p + 2;
-      else
-        res= 1;
-      tmp_p+= 2;
+        tmp_p+= 2;
+      }
       break;
     case 'S':
     case 's':
@@ -247,47 +249,31 @@ uint explain_filename(THD* thd,
         subpart_name= tmp_p + 3;
 	tmp_p+= 3;
       }
-      else if ((tmp_p[1] == 'Q' || tmp_p[1] == 'q') &&
-               (tmp_p[2] == 'L' || tmp_p[2] == 'l') &&
-                tmp_p[3] == '-')
-      {
-        tmp_p+= 4; /* sql- prefix found */
-      }
-      else
-        res= 2;
       break;
     case 'T':
     case 't':
       if ((tmp_p[1] == 'M' || tmp_p[1] == 'm') &&
           (tmp_p[2] == 'P' || tmp_p[2] == 'p') &&
           tmp_p[3] == '#' && !tmp_p[4])
-        name_variant= TEMP_PART_NAME;
-      else
-        res= 3;
-      tmp_p+= 4;
+      {
+        part_type= TEMP_PART_NAME;
+        tmp_p+= 4;
+      }
       break;
     case 'R':
     case 'r':
       if ((tmp_p[1] == 'E' || tmp_p[1] == 'e') &&
           (tmp_p[2] == 'N' || tmp_p[2] == 'n') &&
           tmp_p[3] == '#' && !tmp_p[4])
-        name_variant= RENAMED_PART_NAME;
-      else
-        res= 4;
-      tmp_p+= 4;
+      {
+        part_type= RENAMED_PART_NAME;
+        tmp_p+= 4;
+      }
       break;
     default:
-      res= 5;
+      /* Not partition name part. */
+      ;
     }
-  }
-  if (res)
-  {
-    /* Better to give something back if we fail parsing, than nothing at all */
-    DBUG_PRINT("info", ("Error in explain_filename: %u", res));
-    sql_print_warning("Invalid (old?) table or database name '%s'", from);
-    DBUG_RETURN(my_snprintf(to, to_length,
-                            "<result %u when explaining filename '%s'>",
-                            res, from));
   }
   if (part_name)
   {
@@ -296,7 +282,7 @@ uint explain_filename(THD* thd,
       subpart_name_len= strlen(subpart_name);
     else
       part_name_len= strlen(part_name);
-    if (name_variant != NORMAL_PART_NAME)
+    if (part_type != NORMAL_PART_NAME)
     {
       if (subpart_name)
         subpart_name_len-= 5;
@@ -338,9 +324,9 @@ uint explain_filename(THD* thd,
       to_p= strnmov(to_p, " ", end_p - to_p);
     else
       to_p= strnmov(to_p, ", ", end_p - to_p);
-    if (name_variant != NORMAL_PART_NAME)
+    if (part_type != NORMAL_PART_NAME)
     {
-      if (name_variant == TEMP_PART_NAME)
+      if (part_type == TEMP_PART_NAME)
         to_p= strnmov(to_p, ER_THD_OR_DEFAULT(thd, ER_TEMPORARY_NAME),
                       end_p - to_p);
       else
@@ -648,13 +634,6 @@ uint build_tmptable_filename(THD* thd, char *buff, size_t bufflen)
 
 struct st_global_ddl_log
 {
-  /*
-    We need to adjust buffer size to be able to handle downgrades/upgrades
-    where IO_SIZE has changed. We'll set the buffer size such that we can
-    handle that the buffer size was upto 4 times bigger in the version
-    that wrote the DDL log.
-  */
-  char file_entry_buf[4*IO_SIZE];
   char file_name_str[FN_REFLEN];
   char *file_name;
   DDL_LOG_MEMORY_ENTRY *first_free;
@@ -682,51 +661,60 @@ mysql_mutex_t LOCK_gdl;
 #define DDL_LOG_NUM_ENTRY_POS 0
 #define DDL_LOG_NAME_LEN_POS 4
 #define DDL_LOG_IO_SIZE_POS 8
+#define DDL_LOG_HEADER_SIZE 12
 
-/*
-  Read one entry from ddl log file
-  SYNOPSIS
-    read_ddl_log_file_entry()
-    entry_no                     Entry number to read
-  RETURN VALUES
-    TRUE                         Error
-    FALSE                        Success
+/**
+  Read one entry from ddl log file.
+  @param[out]  file_entry_buf  Buffer to read into
+  @param       entry_no        Entry number to read
+  @param       size            Number of bytes of the entry to read
+
+  @return Operation status
+    @retval true   Error
+    @retval false  Success
 */
 
-static bool read_ddl_log_file_entry(uint entry_no)
+static bool read_ddl_log_file_entry(uchar *file_entry_buf,
+                                    uint entry_no,
+                                    uint size)
 {
   bool error= FALSE;
   File file_id= global_ddl_log.file_id;
-  uchar *file_entry_buf= (uchar*)global_ddl_log.file_entry_buf;
   uint io_size= global_ddl_log.io_size;
   DBUG_ENTER("read_ddl_log_file_entry");
+  DBUG_ASSERT(io_size >= size);
 
-  if (mysql_file_pread(file_id, file_entry_buf, io_size, io_size * entry_no,
-                       MYF(MY_WME)) != io_size)
+  if (mysql_file_pread(file_id, file_entry_buf, size, io_size * entry_no,
+                       MYF(MY_WME)) != size)
     error= TRUE;
   DBUG_RETURN(error);
 }
 
 
-/*
-  Write one entry from ddl log file
-  SYNOPSIS
-    write_ddl_log_file_entry()
-    entry_no                     Entry number to write
-  RETURN VALUES
-    TRUE                         Error
-    FALSE                        Success
+/**
+  Write one entry to ddl log file.
+
+  @param  file_entry_buf  Buffer to write
+  @param  entry_no        Entry number to write
+  @param  size            Number of bytes of the entry to write
+
+  @return Operation status
+    @retval true   Error
+    @retval false  Success
 */
 
-static bool write_ddl_log_file_entry(uint entry_no)
+static bool write_ddl_log_file_entry(uchar *file_entry_buf,
+                                     uint entry_no,
+                                     uint size)
 {
   bool error= FALSE;
   File file_id= global_ddl_log.file_id;
-  char *file_entry_buf= (char*)global_ddl_log.file_entry_buf;
+  uint io_size= global_ddl_log.io_size;
   DBUG_ENTER("write_ddl_log_file_entry");
+  DBUG_ASSERT(io_size >= size);
 
-  if (mysql_file_pwrite(file_id, (uchar*)file_entry_buf,
-                        IO_SIZE, IO_SIZE * entry_no, MYF(MY_WME)) != IO_SIZE)
+  if (mysql_file_pwrite(file_id, file_entry_buf, size,
+                        io_size * entry_no, MYF(MY_WME)) != size)
     error= TRUE;
   DBUG_RETURN(error);
 }
@@ -745,17 +733,20 @@ static bool write_ddl_log_header()
 {
   uint16 const_var;
   bool error= FALSE;
+  uchar file_entry_buf[DDL_LOG_HEADER_SIZE];
   DBUG_ENTER("write_ddl_log_header");
+  DBUG_ASSERT((DDL_LOG_NAME_POS + 3 * global_ddl_log.name_len)
+                <= global_ddl_log.io_size);
 
-  int4store(&global_ddl_log.file_entry_buf[DDL_LOG_NUM_ENTRY_POS],
+  int4store(&file_entry_buf[DDL_LOG_NUM_ENTRY_POS],
             global_ddl_log.num_entries);
-  const_var= FN_LEN;
-  int4store(&global_ddl_log.file_entry_buf[DDL_LOG_NAME_LEN_POS],
+  const_var= global_ddl_log.name_len;
+  int4store(&file_entry_buf[DDL_LOG_NAME_LEN_POS],
             (ulong) const_var);
-  const_var= IO_SIZE;
-  int4store(&global_ddl_log.file_entry_buf[DDL_LOG_IO_SIZE_POS],
+  const_var= global_ddl_log.io_size;
+  int4store(&file_entry_buf[DDL_LOG_IO_SIZE_POS],
             (ulong) const_var);
-  if (write_ddl_log_file_entry(0UL))
+  if (write_ddl_log_file_entry(file_entry_buf, 0UL, DDL_LOG_HEADER_SIZE))
   {
     sql_print_error("Error writing ddl log header");
     DBUG_RETURN(TRUE);
@@ -795,18 +786,20 @@ static inline void create_ddl_log_file_name(char *file_name)
 
 static uint read_ddl_log_header()
 {
-  char *file_entry_buf= (char*)global_ddl_log.file_entry_buf;
+  char file_entry_buf[DDL_LOG_HEADER_SIZE];
   char file_name[FN_REFLEN];
   uint entry_no;
   bool successful_open= FALSE;
   DBUG_ENTER("read_ddl_log_header");
+  DBUG_ASSERT(global_ddl_log.io_size <= IO_SIZE);
 
   create_ddl_log_file_name(file_name);
   if ((global_ddl_log.file_id= mysql_file_open(key_file_global_ddl_log,
                                                file_name,
                                                O_RDWR | O_BINARY, MYF(0))) >= 0)
   {
-    if (read_ddl_log_file_entry(0UL))
+    if (read_ddl_log_file_entry((uchar *) file_entry_buf, 0UL,
+                                DDL_LOG_HEADER_SIZE))
     {
       /* Write message into error log */
       sql_print_error("Failed to read ddl log file in recovery");
@@ -819,8 +812,6 @@ static uint read_ddl_log_header()
     entry_no= uint4korr(&file_entry_buf[DDL_LOG_NUM_ENTRY_POS]);
     global_ddl_log.name_len= uint4korr(&file_entry_buf[DDL_LOG_NAME_LEN_POS]);
     global_ddl_log.io_size= uint4korr(&file_entry_buf[DDL_LOG_IO_SIZE_POS]);
-    DBUG_ASSERT(global_ddl_log.io_size <=
-                sizeof(global_ddl_log.file_entry_buf));
   }
   else
   {
@@ -835,30 +826,22 @@ static uint read_ddl_log_header()
 }
 
 
-/*
-  Read a ddl log entry
-  SYNOPSIS
-    read_ddl_log_entry()
-    read_entry               Number of entry to read
-    out:entry_info           Information from entry
-  RETURN VALUES
-    TRUE                     Error
-    FALSE                    Success
-  DESCRIPTION
-    Read a specified entry in the ddl log
+/**
+  Set ddl log entry struct from buffer
+  @param read_entry      Entry number
+  @param file_entry_buf  Buffer to use
+  @param ddl_log_entry   Entry to be set
+
+  @note Pointers in ddl_log_entry will point into file_entry_buf!
 */
 
-bool read_ddl_log_entry(uint read_entry, DDL_LOG_ENTRY *ddl_log_entry)
+static void set_ddl_log_entry_from_buf(uint read_entry,
+                                       uchar *file_entry_buf,
+                                       DDL_LOG_ENTRY *ddl_log_entry)
 {
-  char *file_entry_buf= (char*)&global_ddl_log.file_entry_buf;
   uint inx;
   uchar single_char;
-  DBUG_ENTER("read_ddl_log_entry");
-
-  if (read_ddl_log_file_entry(read_entry))
-  {
-    DBUG_RETURN(TRUE);
-  }
+  DBUG_ENTER("set_ddl_log_entry_from_buf");
   ddl_log_entry->entry_pos= read_entry;
   single_char= file_entry_buf[DDL_LOG_ENTRY_TYPE_POS];
   ddl_log_entry->entry_type= (enum ddl_log_entry_code)single_char;
@@ -866,14 +849,14 @@ bool read_ddl_log_entry(uint read_entry, DDL_LOG_ENTRY *ddl_log_entry)
   ddl_log_entry->action_type= (enum ddl_log_action_code)single_char;
   ddl_log_entry->phase= file_entry_buf[DDL_LOG_PHASE_POS];
   ddl_log_entry->next_entry= uint4korr(&file_entry_buf[DDL_LOG_NEXT_ENTRY_POS]);
-  ddl_log_entry->name= &file_entry_buf[DDL_LOG_NAME_POS];
+  ddl_log_entry->name= (char*) &file_entry_buf[DDL_LOG_NAME_POS];
   inx= DDL_LOG_NAME_POS + global_ddl_log.name_len;
-  ddl_log_entry->from_name= &file_entry_buf[inx];
+  ddl_log_entry->from_name= (char*) &file_entry_buf[inx];
   inx+= global_ddl_log.name_len;
-  ddl_log_entry->handler_name= &file_entry_buf[inx];
-  DBUG_RETURN(FALSE);
+  ddl_log_entry->handler_name= (char*) &file_entry_buf[inx];
+  DBUG_VOID_RETURN;
 }
-
+ 
 
 /*
   Initialise ddl log
@@ -1076,6 +1059,7 @@ static bool get_free_ddl_log_entry(DDL_LOG_MEMORY_ENTRY **active_entry,
   DDL_LOG_MEMORY_ENTRY *first_used= global_ddl_log.first_used;
   DBUG_ENTER("get_free_ddl_log_entry");
 
+  mysql_mutex_assert_owner(&LOCK_gdl);
   if (global_ddl_log.first_free == NULL)
   {
     if (!(used_entry= (DDL_LOG_MEMORY_ENTRY*)my_malloc(
@@ -1133,34 +1117,36 @@ bool write_ddl_log_entry(DDL_LOG_ENTRY *ddl_log_entry,
                          DDL_LOG_MEMORY_ENTRY **active_entry)
 {
   bool error, write_header;
+  char file_entry_buf[IO_SIZE];
   DBUG_ENTER("write_ddl_log_entry");
 
   if (init_ddl_log())
   {
     DBUG_RETURN(TRUE);
   }
-  global_ddl_log.file_entry_buf[DDL_LOG_ENTRY_TYPE_POS]=
+  memset(file_entry_buf, 0, sizeof(file_entry_buf));
+  file_entry_buf[DDL_LOG_ENTRY_TYPE_POS]=
                                     (char)DDL_LOG_ENTRY_CODE;
-  global_ddl_log.file_entry_buf[DDL_LOG_ACTION_TYPE_POS]=
+  file_entry_buf[DDL_LOG_ACTION_TYPE_POS]=
                                     (char)ddl_log_entry->action_type;
-  global_ddl_log.file_entry_buf[DDL_LOG_PHASE_POS]= 0;
-  int4store(&global_ddl_log.file_entry_buf[DDL_LOG_NEXT_ENTRY_POS],
+  file_entry_buf[DDL_LOG_PHASE_POS]= 0;
+  int4store(&file_entry_buf[DDL_LOG_NEXT_ENTRY_POS],
             ddl_log_entry->next_entry);
-  DBUG_ASSERT(strlen(ddl_log_entry->name) < FN_LEN);
-  strmake(&global_ddl_log.file_entry_buf[DDL_LOG_NAME_POS],
-          ddl_log_entry->name, FN_LEN - 1);
+  DBUG_ASSERT(strlen(ddl_log_entry->name) < global_ddl_log.name_len);
+  strmake(&file_entry_buf[DDL_LOG_NAME_POS], ddl_log_entry->name,
+          global_ddl_log.name_len - 1);
   if (ddl_log_entry->action_type == DDL_LOG_RENAME_ACTION ||
       ddl_log_entry->action_type == DDL_LOG_REPLACE_ACTION)
   {
-    DBUG_ASSERT(strlen(ddl_log_entry->from_name) < FN_LEN);
-    strmake(&global_ddl_log.file_entry_buf[DDL_LOG_NAME_POS + FN_LEN],
-          ddl_log_entry->from_name, FN_LEN - 1);
+    DBUG_ASSERT(strlen(ddl_log_entry->from_name) < global_ddl_log.name_len);
+    strmake(&file_entry_buf[DDL_LOG_NAME_POS + global_ddl_log.name_len],
+            ddl_log_entry->from_name, global_ddl_log.name_len - 1);
   }
   else
-    global_ddl_log.file_entry_buf[DDL_LOG_NAME_POS + FN_LEN]= 0;
-  DBUG_ASSERT(strlen(ddl_log_entry->handler_name) < FN_LEN);
-  strmake(&global_ddl_log.file_entry_buf[DDL_LOG_NAME_POS + (2*FN_LEN)],
-          ddl_log_entry->handler_name, FN_LEN - 1);
+    file_entry_buf[DDL_LOG_NAME_POS + global_ddl_log.name_len]= 0;
+  DBUG_ASSERT(strlen(ddl_log_entry->handler_name) < global_ddl_log.name_len);
+  strmake(&file_entry_buf[DDL_LOG_NAME_POS + (2*global_ddl_log.name_len)],
+          ddl_log_entry->handler_name, global_ddl_log.name_len - 1);
   if (get_free_ddl_log_entry(active_entry, &write_header))
   {
     DBUG_RETURN(TRUE);
@@ -1168,14 +1154,15 @@ bool write_ddl_log_entry(DDL_LOG_ENTRY *ddl_log_entry,
   error= FALSE;
   DBUG_PRINT("ddl_log",
              ("write type %c next %u name '%s' from_name '%s' handler '%s'",
-             (char) global_ddl_log.file_entry_buf[DDL_LOG_ACTION_TYPE_POS],
+             (char) file_entry_buf[DDL_LOG_ACTION_TYPE_POS],
              ddl_log_entry->next_entry,
-             (char*) &global_ddl_log.file_entry_buf[DDL_LOG_NAME_POS],
-             (char*) &global_ddl_log.file_entry_buf[DDL_LOG_NAME_POS
-                                                    + FN_LEN],
-             (char*) &global_ddl_log.file_entry_buf[DDL_LOG_NAME_POS
-                                                    + (2*FN_LEN)]));
-  if (write_ddl_log_file_entry((*active_entry)->entry_pos))
+             (char*) &file_entry_buf[DDL_LOG_NAME_POS],
+             (char*) &file_entry_buf[DDL_LOG_NAME_POS +
+                                     global_ddl_log.name_len],
+             (char*) &file_entry_buf[DDL_LOG_NAME_POS +
+                                     (2*global_ddl_log.name_len)]));
+  if (write_ddl_log_file_entry((uchar*) file_entry_buf,
+                               (*active_entry)->entry_pos, IO_SIZE))
   {
     error= TRUE;
     sql_print_error("Failed to write entry_no = %u",
@@ -1225,13 +1212,14 @@ bool write_execute_ddl_log_entry(uint first_entry,
                                  DDL_LOG_MEMORY_ENTRY **active_entry)
 {
   bool write_header= FALSE;
-  char *file_entry_buf= (char*)global_ddl_log.file_entry_buf;
+  char file_entry_buf[IO_SIZE];
   DBUG_ENTER("write_execute_ddl_log_entry");
 
   if (init_ddl_log())
   {
     DBUG_RETURN(TRUE);
   }
+  memset(file_entry_buf, 0, sizeof(file_entry_buf));
   if (!complete)
   {
     /*
@@ -1245,12 +1233,7 @@ bool write_execute_ddl_log_entry(uint first_entry,
   }
   else
     file_entry_buf[DDL_LOG_ENTRY_TYPE_POS]= (char)DDL_IGNORE_LOG_ENTRY_CODE;
-  file_entry_buf[DDL_LOG_ACTION_TYPE_POS]= 0; /* Ignored for execute entries */
-  file_entry_buf[DDL_LOG_PHASE_POS]= 0;
   int4store(&file_entry_buf[DDL_LOG_NEXT_ENTRY_POS], first_entry);
-  file_entry_buf[DDL_LOG_NAME_POS]= 0;
-  file_entry_buf[DDL_LOG_NAME_POS + FN_LEN]= 0;
-  file_entry_buf[DDL_LOG_NAME_POS + 2*FN_LEN]= 0;
   if (!(*active_entry))
   {
     if (get_free_ddl_log_entry(active_entry, &write_header))
@@ -1258,7 +1241,9 @@ bool write_execute_ddl_log_entry(uint first_entry,
       DBUG_RETURN(TRUE);
     }
   }
-  if (write_ddl_log_file_entry((*active_entry)->entry_pos))
+  if (write_ddl_log_file_entry((uchar*) file_entry_buf,
+                               (*active_entry)->entry_pos,
+                               IO_SIZE))
   {
     sql_print_error("Error writing execute entry in ddl log");
     release_ddl_log_memory_entry(*active_entry);
@@ -1303,10 +1288,16 @@ bool write_execute_ddl_log_entry(uint first_entry,
 
 bool deactivate_ddl_log_entry(uint entry_no)
 {
-  char *file_entry_buf= (char*)global_ddl_log.file_entry_buf;
+  uchar file_entry_buf[DDL_LOG_NAME_POS];
   DBUG_ENTER("deactivate_ddl_log_entry");
 
-  if (!read_ddl_log_file_entry(entry_no))
+
+  /*
+    Only need to read and write the first bytes of the entry, where
+    ENTRY_TYPE, ACTION_TYPE and PHASE reside. Using DDL_LOG_NAME_POS
+    to include all info except for the names.
+  */
+  if (!read_ddl_log_file_entry(file_entry_buf, entry_no, DDL_LOG_NAME_POS))
   {
     if (file_entry_buf[DDL_LOG_ENTRY_TYPE_POS] == DDL_LOG_ENTRY_CODE)
     {
@@ -1324,7 +1315,7 @@ bool deactivate_ddl_log_entry(uint entry_no)
       {
         DBUG_ASSERT(0);
       }
-      if (write_ddl_log_file_entry(entry_no))
+      if (write_ddl_log_file_entry(file_entry_buf, entry_no, DDL_LOG_NAME_POS))
       {
         sql_print_error("Error in deactivating log entry. Position = %u",
                         entry_no);
@@ -1385,6 +1376,7 @@ void release_ddl_log_memory_entry(DDL_LOG_MEMORY_ENTRY *log_entry)
   DDL_LOG_MEMORY_ENTRY *next_log_entry= log_entry->next_log_entry;
   DDL_LOG_MEMORY_ENTRY *prev_log_entry= log_entry->prev_log_entry;
   DBUG_ENTER("release_ddl_log_memory_entry");
+  mysql_mutex_assert_owner(&LOCK_gdl);
 
   global_ddl_log.first_free= log_entry;
   log_entry->next_log_entry= first_free;
@@ -1414,24 +1406,26 @@ bool execute_ddl_log_entry(THD *thd, uint first_entry)
 {
   DDL_LOG_ENTRY ddl_log_entry;
   uint read_entry= first_entry;
+  uchar file_entry_buf[IO_SIZE];
   DBUG_ENTER("execute_ddl_log_entry");
 
   mysql_mutex_lock(&LOCK_gdl);
   do
   {
-    if (read_ddl_log_entry(read_entry, &ddl_log_entry))
+    if (read_ddl_log_file_entry(file_entry_buf, read_entry, IO_SIZE))
     {
-      /* Write to error log and continue with next log entry */
+      /* Print the error to the log and continue with next log entry */
       sql_print_error("Failed to read entry = %u from ddl log",
                       read_entry);
       break;
     }
+    set_ddl_log_entry_from_buf(read_entry, file_entry_buf, &ddl_log_entry);
     DBUG_ASSERT(ddl_log_entry.entry_type == DDL_LOG_ENTRY_CODE ||
                 ddl_log_entry.entry_type == DDL_IGNORE_LOG_ENTRY_CODE);
 
     if (execute_ddl_log_action(thd, &ddl_log_entry))
     {
-      /* Write to error log and continue with next log entry */
+      /* Print the error to the log and continue with next log entry */
       sql_print_error("Failed to execute action for entry = %u from ddl log",
                       read_entry);
       break;
@@ -1476,13 +1470,14 @@ void execute_ddl_log_recovery()
   uint num_entries, i;
   THD *thd;
   DDL_LOG_ENTRY ddl_log_entry;
+  uchar *file_entry_buf;
+  uint io_size;
   char file_name[FN_REFLEN];
   DBUG_ENTER("execute_ddl_log_recovery");
 
   /*
     Initialise global_ddl_log struct
   */
-  bzero(global_ddl_log.file_entry_buf, sizeof(global_ddl_log.file_entry_buf));
   global_ddl_log.inited= FALSE;
   global_ddl_log.recovery_phase= TRUE;
   global_ddl_log.io_size= IO_SIZE;
@@ -1497,14 +1492,23 @@ void execute_ddl_log_recovery()
   thd->store_globals();
 
   num_entries= read_ddl_log_header();
+  io_size= global_ddl_log.io_size;
+  file_entry_buf= (uchar*) my_malloc(io_size, MYF(0));
+  if (!file_entry_buf)
+  {
+    sql_print_error("Failed to allocate buffer for recover ddl log");
+    DBUG_VOID_RETURN;
+  }
   for (i= 1; i < num_entries + 1; i++)
   {
-    if (read_ddl_log_entry(i, &ddl_log_entry))
+    if (read_ddl_log_file_entry(file_entry_buf, i, io_size))
     {
       sql_print_error("Failed to read entry no = %u from ddl log",
                        i);
       continue;
     }
+
+    set_ddl_log_entry_from_buf(i, file_entry_buf, &ddl_log_entry);
     if (ddl_log_entry.entry_type == DDL_LOG_EXECUTE_CODE)
     {
       if (execute_ddl_log_entry(thd, ddl_log_entry.next_entry))
@@ -1519,6 +1523,7 @@ void execute_ddl_log_recovery()
   (void) mysql_file_delete(key_file_global_ddl_log, file_name, MYF(0));
   global_ddl_log.recovery_phase= FALSE;
   delete thd;
+  my_free(file_entry_buf);
   /* Remember that we don't have a THD */
   my_pthread_setspecific_ptr(THR_THD,  0);
   DBUG_VOID_RETURN;
@@ -1535,14 +1540,16 @@ void execute_ddl_log_recovery()
 
 void release_ddl_log()
 {
-  DDL_LOG_MEMORY_ENTRY *free_list= global_ddl_log.first_free;
-  DDL_LOG_MEMORY_ENTRY *used_list= global_ddl_log.first_used;
+  DDL_LOG_MEMORY_ENTRY *free_list;
+  DDL_LOG_MEMORY_ENTRY *used_list;
   DBUG_ENTER("release_ddl_log");
 
   if (!global_ddl_log.do_release)
     DBUG_VOID_RETURN;
 
   mysql_mutex_lock(&LOCK_gdl);
+  free_list= global_ddl_log.first_free;
+  used_list= global_ddl_log.first_used;
   while (used_list)
   {
     DDL_LOG_MEMORY_ENTRY *tmp= used_list->next_log_entry;
@@ -1671,7 +1678,8 @@ bool mysql_write_frm(ALTER_PARTITION_PARAM_TYPE *lpt, uint flags)
                                                          &syntax_len,
                                                          TRUE, TRUE,
                                                          lpt->create_info,
-                                                         lpt->alter_info)))
+                                                         lpt->alter_info,
+                                                         NULL)))
         {
           DBUG_RETURN(TRUE);
         }
@@ -1764,7 +1772,8 @@ bool mysql_write_frm(ALTER_PARTITION_PARAM_TYPE *lpt, uint flags)
                                                        &syntax_len,
                                                        TRUE, TRUE,
                                                        lpt->create_info,
-                                                       lpt->alter_info)))
+                                                       lpt->alter_info,
+                                                       NULL)))
       {
         error= 1;
         goto err;
@@ -2190,7 +2199,8 @@ int mysql_rm_table_no_locks(THD *thd, TABLE_LIST *tables, bool if_exists,
 
       if (thd->locked_tables_mode)
       {
-        if (wait_while_table_is_used(thd, table->table, HA_EXTRA_NOT_USED))
+        if (wait_while_table_is_used(thd, table->table, HA_EXTRA_NOT_USED,
+                                     TDC_RT_REMOVE_NOT_OWN_AND_MARK_NOT_USABLE))
         {
           error= -1;
           goto err;
@@ -2321,6 +2331,10 @@ int mysql_rm_table_no_locks(THD *thd, TABLE_LIST *tables, bool if_exists,
       if (wrong_tables.length())
 	wrong_tables.append(',');
       wrong_tables.append(String(table->table_name,system_charset_info));
+    }
+    else
+    {
+      mysql_audit_drop_table(thd, table);
     }
     DBUG_PRINT("table", ("table: 0x%lx  s: 0x%lx", (long) table->table,
                          table->table ? (long) table->table->s : (long) -1));
@@ -4230,7 +4244,8 @@ bool mysql_create_table_no_lock(THD *thd,
                                                      &syntax_len,
                                                      TRUE, TRUE,
                                                      create_info,
-                                                     alter_info)))
+                                                     alter_info,
+                                                     NULL)))
       goto err;
     part_info->part_info_string= part_syntax_buf;
     part_info->part_info_len= syntax_len;
@@ -4706,6 +4721,8 @@ mysql_rename_table(handlerton *base, const char *old_db,
     my_error(ER_NOT_SUPPORTED_YET, MYF(0), "ALTER TABLE");
   else if (error)
     my_error(ER_ERROR_ON_RENAME, MYF(0), from, to, error);
+  else if (!(flags & FN_IS_TMP))
+    mysql_audit_rename_table(thd, old_db, old_name, new_db, new_name);
   DBUG_RETURN(error != 0);
 }
 
@@ -6034,9 +6051,14 @@ bool mysql_alter_table(THD *thd,char *new_db, char *new_name,
 
   /* DISCARD/IMPORT TABLESPACE is always alone in an ALTER TABLE */
   if (alter_info->tablespace_op != NO_TABLESPACE_OP)
+  {
+    mysql_audit_alter_table(thd, table_list);
+
     /* Conditionally writes to binlog. */
-    DBUG_RETURN(mysql_discard_or_import_tablespace(thd,table_list,
-						   alter_info->tablespace_op));
+    bool ret= mysql_discard_or_import_tablespace(thd,table_list,
+                                                 alter_info->tablespace_op);
+    DBUG_RETURN(ret);
+  }
 
   /*
     Code below can handle only base tables so ensure that we won't open a view.
@@ -6228,6 +6250,9 @@ bool mysql_alter_table(THD *thd,char *new_db, char *new_name,
     my_error(ER_ILLEGAL_HA, MYF(0), table_name);
     goto err;
   }
+
+  if (table->s->tmp_table == NO_TMP_TABLE)
+    mysql_audit_alter_table(thd, table_list);
   
   thd_proc_info(thd, "setup");
   if (!(alter_info->flags & ~(ALTER_RENAME | ALTER_KEYS_ONOFF)) &&
@@ -6237,15 +6262,19 @@ bool mysql_alter_table(THD *thd,char *new_db, char *new_name,
     case LEAVE_AS_IS:
       break;
     case ENABLE:
-      if (wait_while_table_is_used(thd, table, extra_func))
+      if (wait_while_table_is_used(thd, table, extra_func,
+                                   TDC_RT_REMOVE_NOT_OWN_AND_MARK_NOT_USABLE))
         goto err;
       DEBUG_SYNC(thd,"alter_table_enable_indexes");
       error= table->file->ha_enable_indexes(HA_KEY_SWITCH_NONUNIQ_SAVE);
+      table->s->allow_access_to_protected_table();
       break;
     case DISABLE:
-      if (wait_while_table_is_used(thd, table, extra_func))
+      if (wait_while_table_is_used(thd, table, extra_func,
+                                   TDC_RT_REMOVE_NOT_OWN_AND_MARK_NOT_USABLE))
         goto err;
       error=table->file->ha_disable_indexes(HA_KEY_SWITCH_NONUNIQ_SAVE);
+      table->s->allow_access_to_protected_table();
       break;
     default:
       DBUG_ASSERT(FALSE);
@@ -6271,7 +6300,8 @@ bool mysql_alter_table(THD *thd,char *new_db, char *new_name,
         simple rename did nothing and therefore we can safely return
         without additional clean-up.
       */
-      if (wait_while_table_is_used(thd, table, extra_func))
+      if (wait_while_table_is_used(thd, table, extra_func,
+                                   TDC_RT_REMOVE_NOT_OWN_AND_MARK_NOT_USABLE))
         goto err;
       close_all_tables_for_name(thd, table->s, HA_EXTRA_PREPARE_FOR_RENAME);
       /*
@@ -6689,6 +6719,7 @@ bool mysql_alter_table(THD *thd,char *new_db, char *new_name,
                                   HA_OPTION_PACK_RECORD));
   }
   tmp_disable_binlog(thd);
+  create_info->options|=HA_CREATE_TMP_ALTER;
   error= mysql_create_table_no_lock(thd, new_db, tmp_name,
                                     create_info,
                                     alter_info,
@@ -6704,6 +6735,7 @@ bool mysql_alter_table(THD *thd,char *new_db, char *new_name,
     if (table->s->tmp_table)
     {
       Open_table_context ot_ctx(thd, (MYSQL_OPEN_IGNORE_FLUSH |
+                                      MYSQL_OPEN_FOR_REPAIR |
                                       MYSQL_LOCK_IGNORE_TIMEOUT));
       TABLE_LIST tbl;
       bzero((void*) &tbl, sizeof(tbl));
@@ -6776,7 +6808,8 @@ bool mysql_alter_table(THD *thd,char *new_db, char *new_name,
         table->file->indexes_are_disabled())
       need_lock_for_indexes= true;
     if (!table->s->tmp_table && need_lock_for_indexes &&
-        wait_while_table_is_used(thd, table, extra_func))
+        wait_while_table_is_used(thd, table, extra_func,
+                                 TDC_RT_REMOVE_NOT_OWN_AND_MARK_NOT_USABLE))
       goto err_new_table_cleanup;
     thd_proc_info(thd, "manage keys");
     DEBUG_SYNC(thd, "alter_table_manage_keys");
@@ -6785,6 +6818,11 @@ bool mysql_alter_table(THD *thd,char *new_db, char *new_name,
     error= trans_commit_stmt(thd);
     if (trans_commit_implicit(thd))
       error= 1;
+    /*
+      If the table was locked, allow one to still run SHOW commands against it
+    */
+    if (table->s->protected_against_usage())
+      table->s->allow_access_to_protected_table();
   }
   thd->count_cuted_fields= CHECK_FIELD_IGNORE;
 
@@ -6996,7 +7034,8 @@ bool mysql_alter_table(THD *thd,char *new_db, char *new_name,
   if (lower_case_table_names)
     my_casedn_str(files_charset_info, old_name);
 
-  if (wait_while_table_is_used(thd, table, HA_EXTRA_PREPARE_FOR_RENAME))
+  if (wait_while_table_is_used(thd, table, HA_EXTRA_PREPARE_FOR_RENAME,
+                               TDC_RT_REMOVE_NOT_OWN_AND_MARK_NOT_USABLE))
   {
     if (pending_inplace_add_index)
     {

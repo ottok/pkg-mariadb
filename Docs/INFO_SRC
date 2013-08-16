@@ -1,8 +1,8 @@
-revision-id: sergii@pisem.net-20130129112731-0l1ztsun8e56hzg9
-date: 2013-01-29 12:27:31 +0100
-build-date: 2013-01-29 15:12:49 +0100
-revno: 3654
+revision-id: sanja@montyprogram.com-20130717140359-123bw8dzelj6wddn
+date: 2013-07-17 17:03:59 +0300
+build-date: 2013-07-17 16:51:37 +0200
+revno: 3838
 branch-nick: 5.5
 
 
-MySQL source 5.5.29
+MySQL source 5.5.32

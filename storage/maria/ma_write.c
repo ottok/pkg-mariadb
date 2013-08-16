@@ -298,6 +298,7 @@ int maria_write(MARIA_HA *info, uchar *record)
   info->state->records++;
   info->update= (HA_STATE_CHANGED | HA_STATE_AKTIV | HA_STATE_WRITTEN |
 		 HA_STATE_ROW_CHANGED);
+  info->row_changes++;
   share->state.changed|= STATE_NOT_MOVABLE | STATE_NOT_ZEROFILLED;
   info->state->changed= 1;
 
@@ -1714,7 +1715,7 @@ static int keys_free(uchar *key, TREE_FREE mode, bulk_insert_param *param)
 }
 
 
-int maria_init_bulk_insert(MARIA_HA *info, ulong cache_size, ha_rows rows)
+int maria_init_bulk_insert(MARIA_HA *info, size_t cache_size, ha_rows rows)
 {
   MARIA_SHARE *share= info->s;
   MARIA_KEYDEF *key=share->keyinfo;
@@ -1722,7 +1723,7 @@ int maria_init_bulk_insert(MARIA_HA *info, ulong cache_size, ha_rows rows)
   uint i, num_keys, total_keylength;
   ulonglong key_map;
   DBUG_ENTER("_ma_init_bulk_insert");
-  DBUG_PRINT("enter",("cache_size: %lu", cache_size));
+  DBUG_PRINT("enter",("cache_size: %lu", (ulong) cache_size));
 
   DBUG_ASSERT(!info->bulk_insert &&
 	      (!rows || rows >= MARIA_MIN_ROWS_TO_USE_BULK_INSERT));
@@ -1740,11 +1741,11 @@ int maria_init_bulk_insert(MARIA_HA *info, ulong cache_size, ha_rows rows)
   }
 
   if (num_keys==0 ||
-      num_keys * MARIA_MIN_SIZE_BULK_INSERT_TREE > cache_size)
+      num_keys * (size_t) MARIA_MIN_SIZE_BULK_INSERT_TREE > cache_size)
     DBUG_RETURN(0);
 
   if (rows && rows*total_keylength < cache_size)
-    cache_size= (ulong)rows;
+    cache_size= (size_t)rows;
   else
     cache_size/=total_keylength*16;
 

@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA */
 
 
 /* Function items used by mysql */
@@ -491,6 +491,7 @@ public:
   enum Item_result result_type () const { return STRING_RESULT; }
   CHARSET_INFO *charset_for_protocol(void) const { return &my_charset_bin; }
   enum_field_types field_type() const { return MYSQL_TYPE_DATETIME; }
+  Item_result cmp_type() const { return TIME_RESULT; }
   String *val_str(String *str);
   longlong val_int();
   double val_real();

@@ -1,4 +1,4 @@
-/* Copyright (c) 2000, 2011, Oracle and/or its affiliates.
+/* Copyright (c) 2000, 2013, Oracle and/or its affiliates.
    Copyright (c) 2009, 2013, Monty Program Ab.
 
    This program is free software; you can redistribute it and/or modify
@@ -41,6 +41,7 @@
 #include "sql_acl.h"                            // EXECUTE_ACL
 #include "mysqld.h"                             // LOCK_short_uuid_generator
 #include "rpl_mi.h"
+#include "sql_time.h"
 #include <m_ctype.h>
 #include <hash.h>
 #include <time.h>
@@ -225,7 +226,7 @@ Item_func::fix_fields(THD *thd, Item **ref)
       with_field= with_field || item->with_field;
       used_tables_cache|=     item->used_tables();
       const_item_cache&=      item->const_item();
-      with_subselect|=        item->with_subselect;
+      with_subselect|=        item->has_subquery();
     }
   }
   fix_length_and_dec();
@@ -769,13 +770,14 @@ void Item_num_op::find_num_type(void)
   {
     hybrid_type= DECIMAL_RESULT;
     result_precision();
+    fix_decimals();
   }
   else
   {
     DBUG_ASSERT(r0 == INT_RESULT && r1 == INT_RESULT);
-    decimals= 0;
     hybrid_type=INT_RESULT;
     result_precision();
+    decimals= 0;
   }
   DBUG_PRINT("info", ("Type: %s",
              (hybrid_type == REAL_RESULT ? "REAL_RESULT" :
@@ -1708,6 +1710,7 @@ void Item_func_div::fix_length_and_dec()
     break;
   case DECIMAL_RESULT:
     result_precision();
+    fix_decimals();
     break;
   case STRING_RESULT:
   case ROW_RESULT:
@@ -1907,6 +1910,16 @@ longlong Item_func_neg::int_op()
   if (args[0]->unsigned_flag &&
       (ulonglong) value > (ulonglong) LONGLONG_MAX + 1)
     return raise_integer_overflow();
+
+  if (value == LONGLONG_MIN)
+  {
+    if (args[0]->unsigned_flag != unsigned_flag)
+      /* negation of LONGLONG_MIN is LONGLONG_MIN. */
+      return LONGLONG_MIN; 
+    else
+      return raise_integer_overflow();
+  }
+
   return check_integer_overflow(-value, !args[0]->unsigned_flag && value < 0);
 }
 
@@ -2767,6 +2780,12 @@ bool Item_func_min_max::get_date(MYSQL_TIME *ltime, ulonglong fuzzy_date)
       min_max= res;
   }
   unpack_time(min_max, ltime);
+
+  if (!(fuzzy_date & TIME_TIME_ONLY) &&
+      ((null_value= check_date_with_warn(ltime, fuzzy_date,
+                                         MYSQL_TIMESTAMP_ERROR))))
+    return true;
+
   if (compare_as_dates->field_type() == MYSQL_TYPE_DATE)
   {
     ltime->time_type= MYSQL_TIMESTAMP_DATE;
@@ -2830,7 +2849,7 @@ double Item_func_min_max::val_real()
   if (compare_as_dates)
   {
     MYSQL_TIME ltime;
-    if (get_date(&ltime, TIME_FUZZY_DATE))
+    if (get_date(&ltime, 0))
       return 0;
 
     return TIME_to_double(&ltime);
@@ -2859,7 +2878,7 @@ longlong Item_func_min_max::val_int()
   if (compare_as_dates)
   {
     MYSQL_TIME ltime;
-    if (get_date(&ltime, TIME_FUZZY_DATE))
+    if (get_date(&ltime, 0))
       return 0;
 
     return TIME_to_ulonglong(&ltime);
@@ -2889,7 +2908,7 @@ my_decimal *Item_func_min_max::val_decimal(my_decimal *dec)
   if (compare_as_dates)
   {
     MYSQL_TIME ltime;
-    if (get_date(&ltime, TIME_FUZZY_DATE))
+    if (get_date(&ltime, 0))
       return 0;
 
     return date2my_decimal(&ltime, dec);
@@ -4784,7 +4803,7 @@ void Item_func_set_user_var::save_item_result(Item *item)
 {
   DBUG_ENTER("Item_func_set_user_var::save_item_result");
 
-  switch (cached_result_type) {
+  switch (args[0]->result_type()) {
   case REAL_RESULT:
     save_result.vreal= item->val_result();
     break;
@@ -5351,7 +5370,7 @@ enum Item_result Item_func_get_user_var::result_type() const
 void Item_func_get_user_var::print(String *str, enum_query_type query_type)
 {
   str->append(STRING_WITH_LEN("(@"));
-  str->append(name.str,name.length);
+  append_identifier(current_thd, str, name.str, name.length);
   str->append(')');
 }
 
@@ -5978,15 +5997,12 @@ void Item_func_match::init_search(bool no_order)
 {
   DBUG_ENTER("Item_func_match::init_search");
 
+  if (!table->file->get_table()) // the handler isn't opened yet
+    DBUG_VOID_RETURN;
+
   /* Check if init_search() has been called before */
   if (ft_handler)
   {
-    /*
-      We should reset ft_handler as it is cleaned up
-      on destruction of FT_SELECT object
-      (necessary in case of re-execution of subquery).
-      TODO: FT_SELECT should not clean up ft_handler.
-    */
     if (join_key)
       table->file->ft_handler= ft_handler;
     DBUG_VOID_RETURN;
@@ -5995,10 +6011,10 @@ void Item_func_match::init_search(bool no_order)
   if (key == NO_SUCH_KEY)
   {
     List<Item> fields;
-    fields.push_back(new Item_string(" ",1, cmp_collation.collation));
-    for (uint i=1; i < arg_count; i++)
+    fields.push_back(new Item_string(" ", 1, cmp_collation.collation));
+    for (uint i= 1; i < arg_count; i++)
       fields.push_back(args[i]);
-    concat_ws=new Item_func_concat_ws(fields);
+    concat_ws= new Item_func_concat_ws(fields);
     /*
       Above function used only to get value and do not need fix_fields for it:
       Item_string - basic constant
@@ -6010,10 +6026,10 @@ void Item_func_match::init_search(bool no_order)
 
   if (master)
   {
-    join_key=master->join_key=join_key|master->join_key;
+    join_key= master->join_key= join_key | master->join_key;
     master->init_search(no_order);
-    ft_handler=master->ft_handler;
-    join_key=master->join_key;
+    ft_handler= master->ft_handler;
+    join_key= master->join_key;
     DBUG_VOID_RETURN;
   }
 
@@ -6023,7 +6039,7 @@ void Item_func_match::init_search(bool no_order)
   if (!(ft_tmp=key_item()->val_str(&value)))
   {
     ft_tmp= &value;
-    value.set("",0,cmp_collation.collation);
+    value.set("", 0, cmp_collation.collation);
   }
 
   if (ft_tmp->charset() != cmp_collation.collation)
@@ -6036,7 +6052,11 @@ void Item_func_match::init_search(bool no_order)
 
   if (join_key && !no_order)
     flags|=FT_SORTED;
-  ft_handler=table->file->ft_init_ext(flags, key, ft_tmp);
+
+  if (key != NO_SUCH_KEY)
+    thd_proc_info(table->in_use, "FULLTEXT initialization");
+
+  ft_handler= table->file->ft_init_ext(flags, key, ft_tmp);
 
   if (join_key)
     table->file->ft_handler=ft_handler;
@@ -6109,6 +6129,13 @@ bool Item_func_match::fix_index()
   Item_field *item;
   uint ft_to_key[MAX_KEY], ft_cnt[MAX_KEY], fts=0, keynr;
   uint max_cnt=0, mkeys=0, i;
+
+  /*
+    We will skip execution if the item is not fixed
+    with fix_field
+  */
+  if (!fixed)
+    return false;
 
   if (key == NO_SUCH_KEY)
     return 0;

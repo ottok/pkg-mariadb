@@ -909,10 +909,11 @@ int ha_archive::write_row(uchar *buf)
     table->timestamp_field->set_time();
   mysql_mutex_lock(&share->mutex);
 
-  if (!share->archive_write_open)
-    if (init_archive_writer())
-      DBUG_RETURN(errno);
-
+  if (!share->archive_write_open && init_archive_writer())
+  {
+    rc= errno;
+    goto error;
+  }
 
   if (table->next_number_field && record == table->record[0])
   {
@@ -992,7 +993,6 @@ int ha_archive::write_row(uchar *buf)
 error:
   mysql_mutex_unlock(&share->mutex);
   my_free(read_buf);
-
   DBUG_RETURN(rc);
 }
 
@@ -1417,7 +1417,10 @@ int ha_archive::optimize(THD* thd, HA_CHECK_OPT* check_opt)
   mysql_mutex_lock(&share->mutex);
 
   if (init_archive_reader())
+  {
+    mysql_mutex_unlock(&share->mutex);
     DBUG_RETURN(errno);
+  }
 
   // now we close both our writer and our reader for the rename
   if (share->archive_write_open)

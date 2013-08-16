@@ -1856,7 +1856,7 @@ static Time_zone*
 tz_load_from_open_tables(const String *tz_name, TABLE_LIST *tz_tables)
 {
   TABLE *table= 0;
-  TIME_ZONE_INFO *tz_info;
+  TIME_ZONE_INFO *tz_info= NULL;
   Tz_names_entry *tmp_tzname;
   Time_zone *return_val= 0;
   int res;
@@ -1866,7 +1866,8 @@ tz_load_from_open_tables(const String *tz_name, TABLE_LIST *tz_tables)
   uchar keybuff[32];
   Field *field;
   String abbr(buff, sizeof(buff), &my_charset_latin1);
-  char *alloc_buff, *tz_name_buff;
+  char *alloc_buff= NULL;
+  char *tz_name_buff= NULL;
   /*
     Temporary arrays that are used for loading of data for filling
     TIME_ZONE_INFO structure
@@ -1885,22 +1886,6 @@ tz_load_from_open_tables(const String *tz_name, TABLE_LIST *tz_tables)
   memset(&tmp_tz_info, 0, sizeof(TIME_ZONE_INFO));
 
   DBUG_ENTER("tz_load_from_open_tables");
-
-  /* Prepare tz_info for loading also let us make copy of time zone name */
-  if (!(alloc_buff= (char*) alloc_root(&tz_storage, sizeof(TIME_ZONE_INFO) +
-                                       tz_name->length() + 1)))
-  {
-    sql_print_error("Out of memory while loading time zone description");
-    return 0;
-  }
-  tz_info= (TIME_ZONE_INFO *)alloc_buff;
-  bzero(tz_info, sizeof(TIME_ZONE_INFO));
-  tz_name_buff= alloc_buff + sizeof(TIME_ZONE_INFO);
-  /*
-    By writing zero to the end we guarantee that we can call ptr()
-    instead of c_ptr() for time zone name.
-  */
-  strmake(tz_name_buff, tz_name->ptr(), tz_name->length());
 
   /*
     Let us find out time zone id by its name (there is only one index
@@ -2574,7 +2559,7 @@ main(int argc, char **argv)
 
   if (argc == 2)
   {
-    root_name_end= strmake(fullname, argv[1], FN_REFLEN);
+    root_name_end= strmake_buf(fullname, argv[1]);
 
     printf("TRUNCATE TABLE time_zone;\n");
     printf("TRUNCATE TABLE time_zone_name;\n");
@@ -2728,7 +2713,7 @@ main(int argc, char **argv)
          (int)t, (int)t1);
 
   /* Let us load time zone description */
-  str_end= strmake(fullname, TZDIR, FN_REFLEN);
+  str_end= strmake_buf(fullname, TZDIR);
   strmake(str_end, "/MET", FN_REFLEN - (str_end - fullname));
 
   if (tz_load(fullname, &tz_info, &tz_storage))

@@ -1309,8 +1309,9 @@ int ha_maria::check(THD * thd, HA_CHECK_OPT * check_opt)
 
   old_proc_info= thd_proc_info(thd, "Checking status");
   thd_progress_init(thd, 3);
-  (void) maria_chk_status(&param, file);                // Not fatal
-  error= maria_chk_size(&param, file);
+  error= maria_chk_status(&param, file);                // Not fatal
+  if (maria_chk_size(&param, file))
+    error= 1;
   if (!error)
     error|= maria_chk_del(&param, file, param.testflag);
   thd_proc_info(thd, "Checking keys");
@@ -1667,6 +1668,11 @@ int ha_maria::repair(THD *thd, HA_CHECK *param, bool do_optimize)
     }
   }
   thd_proc_info(thd, "Saving state");
+  if (optimize_done && !error && !(param->testflag & T_NO_CREATE_RENAME_LSN))
+  {
+    /* Set trid (needed if the table was moved from another system) */
+    share->state.create_trid= trnman_get_min_safe_trid();
+  }
   mysql_mutex_lock(&share->intern_lock);
   if (!error)
   {
@@ -1682,6 +1688,7 @@ int ha_maria::repair(THD *thd, HA_CHECK *param, bool do_optimize)
     */
     if (file->state != &share->state.state)
       *file->state= share->state.state;
+
     if (share->base.auto_key)
       _ma_update_auto_increment_key(param, file, 1);
     if (optimize_done)
@@ -1689,6 +1696,9 @@ int ha_maria::repair(THD *thd, HA_CHECK *param, bool do_optimize)
                                      UPDATE_TIME | UPDATE_OPEN_COUNT |
                                      (local_testflag &
                                       T_STATISTICS ? UPDATE_STAT : 0));
+    /* File is repaired; Mark the file as moved to this system */
+    (void) _ma_set_uuid(share, 0);
+
     info(HA_STATUS_NO_LOCK | HA_STATUS_TIME | HA_STATUS_VARIABLE |
          HA_STATUS_CONST);
     if (rows != file->state->records && !(param->testflag & T_VERY_SILENT))
@@ -2116,7 +2126,9 @@ void ha_maria::start_bulk_insert(ha_rows rows)
     else if (!file->bulk_insert &&
              (!rows || rows >= MARIA_MIN_ROWS_TO_USE_BULK_INSERT))
     {
-      maria_init_bulk_insert(file, thd->variables.bulk_insert_buff_size, rows);
+      maria_init_bulk_insert(file,
+                             (size_t) thd->variables.bulk_insert_buff_size,
+                             rows);
     }
   }
   DBUG_VOID_RETURN;
@@ -2405,7 +2417,9 @@ int ha_maria::remember_rnd_pos()
 
 int ha_maria::restart_rnd_next(uchar *buf)
 {
-  (*file->s->scan_restore_pos)(file, remember_pos);
+  int error;
+  if ((error= (*file->s->scan_restore_pos)(file, remember_pos)))
+    return error;
   return rnd_next(buf);
 }
 
@@ -2638,23 +2652,6 @@ int ha_maria::external_lock(THD *thd, int lock_type)
     /* Transactional table */
     if (lock_type != F_UNLCK)
     {
-      if (!file->s->lock_key_trees)             // If we don't use versioning
-      {
-        /*
-          We come here in the following cases:
-           - The table is a temporary table
-           - It's a table which is crash safe but not yet versioned, for
-             example a table with fulltext or rtree keys
-
-          Set the current state to point to save_state so that the
-          block_format code don't count the same record twice.
-          Copy also the current state. This may have been wrong if the
-          same file was used several times in the last statement
-        */
-        file->state=  file->state_start;
-        *file->state= file->s->state.state;
-      }
-
       if (file->trn)
       {
         /* This can only happen with tables created with clone() */
@@ -3474,7 +3471,7 @@ static int ha_maria_init(void *p)
 
   maria_hton= (handlerton *)p;
   maria_hton->state= SHOW_OPTION_YES;
-  maria_hton->db_type= DB_TYPE_UNKNOWN;
+  maria_hton->db_type= DB_TYPE_ARIA;
   maria_hton->create= maria_create_handler;
   maria_hton->panic= maria_hton_panic;
   maria_hton->commit= maria_commit;
@@ -3805,6 +3802,25 @@ int ha_maria::multi_range_read_explain_info(uint mrr_mode, char *str,
 
 Item *ha_maria::idx_cond_push(uint keyno_arg, Item* idx_cond_arg)
 {
+  /*
+    Check if the key contains a blob field. If it does then MyISAM
+    should not accept the pushed index condition since MyISAM will not
+    read the blob field from the index entry during evaluation of the
+    pushed index condition and the BLOB field might be part of the
+    range evaluation done by the ICP code.
+  */
+  const KEY *key= &table_share->key_info[keyno_arg];
+
+  for (uint k= 0; k < key->key_parts; ++k)
+  {
+    const KEY_PART_INFO *key_part= &key->key_part[k];
+    if (key_part->key_part_flag & HA_BLOB_PART)
+    {
+      /* Let the server handle the index condition */
+      return idx_cond_arg;
+    }
+  }
+
   pushed_idx_cond_keyno= keyno_arg;
   pushed_idx_cond= idx_cond_arg;
   in_range_check_pushed_down= TRUE;

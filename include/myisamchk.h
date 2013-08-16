@@ -31,27 +31,27 @@
 #define T_AUTO_REPAIR           2		/* QQ to be removed */
 #define T_BACKUP_DATA           4
 #define T_CALC_CHECKSUM         8
-#define T_CHECK                 16		/* QQ to be removed */
-#define T_CHECK_ONLY_CHANGED    32		/* QQ to be removed */
+#define T_CHECK                 16
+#define T_CHECK_ONLY_CHANGED    32
 #define T_CREATE_MISSING_KEYS   64
 #define T_DESCRIPT              128
 #define T_DONT_CHECK_CHECKSUM   256
 #define T_EXTEND                512
-#define T_FAST                  (1L << 10)	/* QQ to be removed */
-#define T_FORCE_CREATE          (1L << 11)	/* QQ to be removed */
+#define T_FAST                  (1L << 10)
+#define T_FORCE_CREATE          (1L << 11)
 #define T_FORCE_UNIQUENESS      (1L << 12)
 #define T_INFO                  (1L << 13)
 #define T_MEDIUM                (1L << 14)
-#define T_QUICK                 (1L << 15)	/* QQ to be removed */
-#define T_READONLY              (1L << 16)	/* QQ to be removed */
+#define T_QUICK                 (1L << 15)
+#define T_READONLY              (1L << 16)
 #define T_REP                   (1L << 17)
-#define T_REP_BY_SORT           (1L << 18)	/* QQ to be removed */
-#define T_REP_PARALLEL          (1L << 19)	/* QQ to be removed */
+#define T_REP_BY_SORT           (1L << 18)
+#define T_REP_PARALLEL          (1L << 19)
 #define T_RETRY_WITHOUT_QUICK   (1L << 20)
 #define T_SAFE_REPAIR           (1L << 21)
 #define T_SILENT                (1L << 22)
-#define T_SORT_INDEX            (1L << 23)	/* QQ to be removed */
-#define T_SORT_RECORDS          (1L << 24)	/* QQ to be removed */
+#define T_SORT_INDEX            (1L << 23)
+#define T_SORT_RECORDS          (1L << 24)
 #define T_STATISTICS            (1L << 25)
 #define T_UNPACK                (1L << 26)
 #define T_UPDATE_STATE          (1L << 27)
@@ -138,9 +138,9 @@ typedef struct st_handler_check_param
   /* Following is used to check if rows are visible */
   ulonglong max_trid, max_found_trid;
   ulonglong not_visible_rows_found;
+  ulonglong sort_buffer_length;
   ulonglong use_buffers;                        /* Used as param to getopt() */
-  size_t read_buffer_length, write_buffer_length;
-  size_t sort_buffer_length, sort_key_blocks;
+  size_t read_buffer_length, write_buffer_length, sort_key_blocks;
   time_t backup_time;                           /* To sign backup files */
   ulong rec_per_key_part[HA_MAX_KEY_SEG * HA_MAX_POSSIBLE_KEY];
   double new_rec_per_key_part[HA_MAX_KEY_SEG * HA_MAX_POSSIBLE_KEY];

@@ -30,6 +30,7 @@
 #include "rt_index.h"
 #include "sql_table.h"                          // tablename_to_filename
 #include "sql_class.h"                          // THD
+#include "debug_sync.h"
 
 ulonglong myisam_recover_options;
 static ulong opt_myisam_block_size;
@@ -77,7 +78,7 @@ static MYSQL_THDVAR_ULONG(repair_threads, PLUGIN_VAR_RQCMDARG,
 static MYSQL_THDVAR_ULONGLONG(sort_buffer_size, PLUGIN_VAR_RQCMDARG,
   "The buffer that is allocated when sorting the index when doing "
   "a REPAIR or when creating indexes with CREATE INDEX or ALTER TABLE", NULL, NULL,
-  8192 * 1024, (long) (MIN_SORT_BUFFER + MALLOC_OVERHEAD), SIZE_T_MAX, 1);
+  8192 * 1024, MIN_SORT_BUFFER + MALLOC_OVERHEAD, SIZE_T_MAX, 1);
 
 static MYSQL_SYSVAR_BOOL(use_mmap, opt_myisam_use_mmap, PLUGIN_VAR_NOCMDARG,
   "Use memory mapping for reading and writing MyISAM tables", NULL, NULL, FALSE);
@@ -1131,6 +1132,7 @@ int ha_myisam::repair(THD *thd, HA_CHECK &param, bool do_optimize)
         thd_proc_info(thd, "Repair by sorting");
         error = mi_repair_by_sort(&param, file, fixed_name,
                                   test(param.testflag & T_QUICK));
+        DEBUG_SYNC(thd, "myisam_after_repair_by_sort");
       }
     }
     else
@@ -1554,7 +1556,8 @@ void ha_myisam::start_bulk_insert(ha_rows rows)
     if (!file->bulk_insert &&
         (!rows || rows >= MI_MIN_ROWS_TO_USE_BULK_INSERT))
     {
-      mi_init_bulk_insert(file, thd->variables.bulk_insert_buff_size, rows);
+      mi_init_bulk_insert(file, (size_t) thd->variables.bulk_insert_buff_size,
+                          rows);
     }
   }
   DBUG_VOID_RETURN;
@@ -2271,6 +2274,25 @@ int ha_myisam::multi_range_read_explain_info(uint mrr_mode, char *str,
 
 Item *ha_myisam::idx_cond_push(uint keyno_arg, Item* idx_cond_arg)
 {
+  /*
+    Check if the key contains a blob field. If it does then MyISAM
+    should not accept the pushed index condition since MyISAM will not
+    read the blob field from the index entry during evaluation of the
+    pushed index condition and the BLOB field might be part of the
+    range evaluation done by the ICP code.
+  */
+  const KEY *key= &table_share->key_info[keyno_arg];
+
+  for (uint k= 0; k < key->key_parts; ++k)
+  {
+    const KEY_PART_INFO *key_part= &key->key_part[k];
+    if (key_part->key_part_flag & HA_BLOB_PART)
+    {
+      /* Let the server handle the index condition */
+      return idx_cond_arg;
+    }
+  }
+
   pushed_idx_cond_keyno= keyno_arg;
   pushed_idx_cond= idx_cond_arg;
   in_range_check_pushed_down= TRUE;

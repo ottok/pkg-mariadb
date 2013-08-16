@@ -12,7 +12,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA */
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA */
 
 
 #define MYSQL_LEX 1
@@ -701,10 +701,7 @@ bool Table_triggers_list::create_trigger(THD *thd, TABLE_LIST *tables,
                      thd->security_ctx->priv_host)))
   {
     if (check_global_access(thd, SUPER_ACL))
-    {
-      my_error(ER_SPECIFIC_ACCESS_DENIED_ERROR, MYF(0), "SUPER");
       return TRUE;
-    }
   }
 
   /*

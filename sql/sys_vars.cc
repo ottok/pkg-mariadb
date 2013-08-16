@@ -223,7 +223,7 @@ static Sys_var_ulonglong Sys_binlog_cache_size(
        "you can increase this to get more performance",
        GLOBAL_VAR(binlog_cache_size),
        CMD_LINE(REQUIRED_ARG),
-       VALID_RANGE(IO_SIZE, ULONGLONG_MAX), DEFAULT(32768), BLOCK_SIZE(IO_SIZE));
+       VALID_RANGE(IO_SIZE, SIZE_T_MAX), DEFAULT(32768), BLOCK_SIZE(IO_SIZE));
 
 static Sys_var_ulonglong Sys_binlog_stmt_cache_size(
        "binlog_stmt_cache_size", "The size of the statement cache for "
@@ -232,7 +232,7 @@ static Sys_var_ulonglong Sys_binlog_stmt_cache_size(
        "you can increase this to get more performance",
        GLOBAL_VAR(binlog_stmt_cache_size),
        CMD_LINE(REQUIRED_ARG),
-       VALID_RANGE(IO_SIZE, ULONGLONG_MAX), DEFAULT(32768), BLOCK_SIZE(IO_SIZE));
+       VALID_RANGE(IO_SIZE, SIZE_T_MAX), DEFAULT(32768), BLOCK_SIZE(IO_SIZE));
 
 /*
   Some variables like @sql_log_bin and @binlog_format change how/if binlogging
@@ -365,7 +365,7 @@ static Sys_var_ulonglong Sys_bulk_insert_buff_size(
        "bulk_insert_buffer_size", "Size of tree cache used in bulk "
        "insert optimisation. Note that this is a limit per thread!",
        SESSION_VAR(bulk_insert_buff_size), CMD_LINE(REQUIRED_ARG),
-       VALID_RANGE(0, ULONGLONG_MAX), DEFAULT(8192*1024), BLOCK_SIZE(1));
+       VALID_RANGE(0, SIZE_T_MAX), DEFAULT(8192*1024), BLOCK_SIZE(1));
 
 static Sys_var_charptr Sys_character_sets_dir(
        "character_sets_dir", "Directory where character sets are",
@@ -827,7 +827,7 @@ static Sys_var_ulonglong Sys_join_buffer_size(
        "join_buffer_size",
        "The size of the buffer that is used for joins",
        SESSION_VAR(join_buff_size), CMD_LINE(REQUIRED_ARG),
-       VALID_RANGE(128, ULONGLONG_MAX), DEFAULT(128*1024), BLOCK_SIZE(128));
+       VALID_RANGE(128, SIZE_T_MAX), DEFAULT(128*1024), BLOCK_SIZE(128));
 
 static Sys_var_keycache Sys_key_buffer_size(
        "key_buffer_size", "The size of the buffer used for "
@@ -1067,16 +1067,16 @@ static Sys_var_ulonglong Sys_max_binlog_cache_size(
        "max_binlog_cache_size",
        "Sets the total size of the transactional cache",
        GLOBAL_VAR(max_binlog_cache_size), CMD_LINE(REQUIRED_ARG),
-       VALID_RANGE(IO_SIZE, ULONGLONG_MAX),
-       DEFAULT((UINT_MAX/IO_SIZE)*IO_SIZE),
+       VALID_RANGE(IO_SIZE, SIZE_T_MAX),
+       DEFAULT((SIZE_T_MAX/IO_SIZE)*IO_SIZE),
        BLOCK_SIZE(IO_SIZE));
 
 static Sys_var_ulonglong Sys_max_binlog_stmt_cache_size(
        "max_binlog_stmt_cache_size",
        "Sets the total size of the statement cache",
        GLOBAL_VAR(max_binlog_stmt_cache_size), CMD_LINE(REQUIRED_ARG),
-       VALID_RANGE(IO_SIZE, ULONGLONG_MAX),
-       DEFAULT((UINT_MAX/IO_SIZE)*IO_SIZE),
+       VALID_RANGE(IO_SIZE, SIZE_T_MAX),
+       DEFAULT((SIZE_T_MAX/IO_SIZE)*IO_SIZE),
        BLOCK_SIZE(IO_SIZE));
 
 static bool fix_max_binlog_size(sys_var *self, THD *thd, enum_var_type type)
@@ -1870,7 +1870,7 @@ static Sys_var_ulonglong Sys_query_cache_size(
        "query_cache_size",
        "The memory allocated to store results from old queries",
        GLOBAL_VAR(query_cache_size), CMD_LINE(REQUIRED_ARG),
-       VALID_RANGE(0, ULONGLONG_MAX), DEFAULT(0), BLOCK_SIZE(1024),
+       VALID_RANGE(0, ULONG_MAX), DEFAULT(0), BLOCK_SIZE(1024),
        NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(check_query_cache_size),
        ON_UPDATE(fix_query_cache_size));
 
@@ -2094,7 +2094,7 @@ static Sys_var_ulonglong Sys_sort_buffer(
        "sort_buffer_size",
        "Each thread that needs to do a sort allocates a buffer of this size",
        SESSION_VAR(sortbuff_size), CMD_LINE(REQUIRED_ARG),
-       VALID_RANGE(MIN_SORT_MEMORY, ULONGLONG_MAX), DEFAULT(MAX_SORT_MEMORY),
+       VALID_RANGE(MIN_SORT_MEMORY, SIZE_T_MAX), DEFAULT(MAX_SORT_MEMORY),
        BLOCK_SIZE(1));
 
 export ulonglong expand_sql_mode(ulonglong sql_mode)
@@ -2911,7 +2911,7 @@ static Sys_var_ulonglong Sys_group_concat_max_len(
        "group_concat_max_len",
        "The maximum length of the result of function  GROUP_CONCAT()",
        SESSION_VAR(group_concat_max_len), CMD_LINE(REQUIRED_ARG),
-       VALID_RANGE(4, ULONGLONG_MAX), DEFAULT(1024), BLOCK_SIZE(1));
+       VALID_RANGE(4, SIZE_T_MAX), DEFAULT(1024), BLOCK_SIZE(1));
 
 static char *glob_hostname_ptr;
 static Sys_var_charptr Sys_hostname(
@@ -3823,9 +3823,67 @@ static Sys_var_ulong Sys_debug_binlog_fsync_sleep(
        CMD_LINE(REQUIRED_ARG),
        VALID_RANGE(0, UINT_MAX), DEFAULT(0), BLOCK_SIZE(1));
 #endif
+
 static Sys_var_harows Sys_expensive_subquery_limit(
        "expensive_subquery_limit",
        "The maximum number of rows a subquery may examine in order to be "
        "executed during optimization and used for constant optimization",
        SESSION_VAR(expensive_subquery_limit), CMD_LINE(REQUIRED_ARG),
        VALID_RANGE(0, HA_POS_ERROR), DEFAULT(100), BLOCK_SIZE(1));
+
+static bool check_pseudo_slave_mode(sys_var *self, THD *thd, set_var *var)
+{
+  longlong previous_val= thd->variables.pseudo_slave_mode;
+  longlong val= (longlong) var->save_result.ulonglong_value;
+  bool rli_fake= false;
+
+#ifndef EMBEDDED_LIBRARY
+  rli_fake= thd->rli_fake ? true : false;
+#endif
+
+  if (rli_fake)
+  {
+    if (!val)
+    {
+#ifndef EMBEDDED_LIBRARY
+      delete thd->rli_fake;
+      thd->rli_fake= NULL;
+#endif
+    }
+    else if (previous_val && val)
+      goto ineffective;
+    else if (!previous_val && val)
+      push_warning(thd, MYSQL_ERROR::WARN_LEVEL_WARN,
+                   ER_WRONG_VALUE_FOR_VAR,
+                   "'pseudo_slave_mode' is already ON.");
+  }
+  else
+  {
+    if (!previous_val && !val)
+      goto ineffective;
+    else if (previous_val && !val)
+      push_warning(thd, MYSQL_ERROR::WARN_LEVEL_WARN,
+                   ER_WRONG_VALUE_FOR_VAR,
+                   "Slave applier execution mode not active, "
+                   "statement ineffective.");
+  }
+  goto end;
+
+ineffective:
+  push_warning(thd, MYSQL_ERROR::WARN_LEVEL_WARN,
+               ER_WRONG_VALUE_FOR_VAR,
+               "'pseudo_slave_mode' change was ineffective.");
+
+end:
+  return FALSE;
+}
+static Sys_var_mybool Sys_pseudo_slave_mode(
+       "pseudo_slave_mode",
+       "SET pseudo_slave_mode= 0,1 are commands that mysqlbinlog "
+       "adds to beginning and end of binary log dumps. While zero "
+       "value indeed disables, the actual enabling of the slave "
+       "applier execution mode is done implicitly when a "
+       "Format_description_event is sent through the session.",
+       SESSION_ONLY(pseudo_slave_mode), NO_CMD_LINE, DEFAULT(FALSE),
+       NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(check_pseudo_slave_mode));
+

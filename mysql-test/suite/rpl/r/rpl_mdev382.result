@@ -154,6 +154,7 @@ master-bin.000001	#	Query	#	#	BEGIN
 master-bin.000001	#	Begin_load_query	#	#	;file_id=#;block_len=#
 master-bin.000001	#	Execute_load_query	#	#	use `test`; LOAD DATA INFILE 'MYSQLTEST_VARDIR/tmp/f\'le.txt' INTO TABLE `db1``; select 'oops!'`.`t``1` FIELDS TERMINATED BY ',' ENCLOSED BY '\'' ESCAPED BY '\\' LINES TERMINATED BY '\n' (`a``1`, `b``2`) SET `c``3`= concat('|', "b""a'z", "!") ;file_id=#
 master-bin.000001	#	Query	#	#	COMMIT
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=1*/;
 /*!40019 SET @@session.max_insert_delayed_threads=0*/;
 /*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;
 DELIMITER /*!*/;
@@ -197,6 +198,7 @@ DELIMITER ;
 # End of log file
 ROLLBACK /* added by mysqlbinlog */;
 /*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;
 SELECT * FROM `db1``; select 'oops!'`.`t``1`;
 a`1	b`2	c`3
 fo\o	bar	|b"a'z!
@@ -243,9 +245,10 @@ master-bin.000001	#	User var	#	#	@`a``3`=9223372036854775807
 master-bin.000001	#	User var	#	#	@`a``4`=18446744073709551615
 master-bin.000001	#	User var	#	#	@`b```=-1.234560123456789e125
 master-bin.000001	#	User var	#	#	@```c`=-1234501234567890123456789012345678901234567890123456789.0123456789
-master-bin.000001	#	User var	#	#	@```d```=_latin1 0x78787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878 COLLATE latin1_swedish_ci
+master-bin.000001	#	User var	#	#	@```d```=_latin1 X'78787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878' COLLATE latin1_swedish_ci
 master-bin.000001	#	Query	#	#	use `db1``; select 'oops!'`; INSERT INTO t1 VALUES (@`a``1`+1, @`a``2`*100, @`a``3`-1, @`a``4`-1, @`b```/2, @```c`, substr(@```d```, 2, 98))
 master-bin.000001	#	Query	#	#	COMMIT
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=1*/;
 /*!40019 SET @@session.max_insert_delayed_threads=0*/;
 /*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;
 DELIMITER /*!*/;
@@ -280,7 +283,7 @@ SET @`a``3`:=9223372036854775807/*!*/;
 SET @`a``4`:=18446744073709551615/*!*/;
 SET @`b```:=-1.2345601234568e+125/*!*/;
 SET @```c`:=-1234501234567890123456789012345678901234567890123456789.0123456789/*!*/;
-SET @```d```:=_latin1 0x78787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878 COLLATE `latin1_swedish_ci`/*!*/;
+SET @```d```:=_latin1 X'78787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878' COLLATE `latin1_swedish_ci`/*!*/;
 SET TIMESTAMP=1000000000/*!*/;
 INSERT INTO t1 VALUES (@`a``1`+1, @`a``2`*100, @`a``3`-1, @`a``4`-1, @`b```/2, @```c`, substr(@```d```, 2, 98))
 /*!*/;
@@ -291,6 +294,7 @@ DELIMITER ;
 # End of log file
 ROLLBACK /* added by mysqlbinlog */;
 /*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;
 SELECT * FROM `db1``; select 'oops!'`.t1 ORDER BY a1;
 a1	a2	a3	a4	b	c	d
 -9223372036854775808	42	9223372036854775807	18446744073709551615	-1.234560123456789e125	-1234501234567890123456789012345678901234567890123456789.0123456789	xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -302,7 +306,7 @@ CREATE TABLE `t``1` ( `a``` INT PRIMARY KEY) ENGINE=innodb;
 CREATE TABLE `t``2` ( `b``` INT PRIMARY KEY, `c``` INT NOT NULL,
 FOREIGN KEY fk (`c```) REFERENCES `t``1`(`a```)) ENGINE=innodb;
 TRUNCATE `t``1`;
-ERROR 42000: Cannot truncate a table referenced in a foreign key constraint (`db1``; select 'oops!'`.`t``2`, CONSTRAINT `INNODB_FOREIGN_KEY_NAME` FOREIGN KEY (`c```) REFERENCES `db1``; select 'oops!'`.`t``1` (`a```))
+ERROR 42000: Cannot truncate a table referenced in a foreign key constraint (`db1``; select 'oops!'`.`t``2`, CONSTRAINT `t``2_ibfk_1` FOREIGN KEY (`c```) REFERENCES `db1``; select 'oops!'`.`t``1` (`a```))
 DROP TABLE `t``2`;
 DROP TABLE `t``1`;
 *** Test correct quoting of DELETE FROM statement binlogged for HEAP table that is emptied due to server restart
@@ -337,6 +341,7 @@ Log_name	Pos	Event_type	Server_id	End_log_pos	Info
 master-bin.000002	#	Query	#	#	BEGIN
 master-bin.000002	#	Query	#	#	use `test`; INSERT INTO t1 VALUES(1)
 master-bin.000002	#	Query	#	#	COMMIT
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=1*/;
 /*!40019 SET @@session.max_insert_delayed_threads=0*/;
 /*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;
 DELIMITER /*!*/;
@@ -363,5 +368,6 @@ DELIMITER ;
 # End of log file
 ROLLBACK /* added by mysqlbinlog */;
 /*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;
 DROP TABLE t1;
 include/rpl_end.inc

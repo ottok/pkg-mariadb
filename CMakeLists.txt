@@ -1,5 +1,5 @@
-# Copyright (c) 2006, 2012, Oracle and/or its affiliates.
-# Copyright (c) 2008, 2012 Monty Program Ab
+# Copyright (c) 2006, 2013, Oracle and/or its affiliates.
+# Copyright (c) 2008, 2013, Monty Program Ab
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -132,14 +132,10 @@ IF (NOT CPACK_GENERATOR)
   ENDIF(WIN32) 
 ENDIF(NOT CPACK_GENERATOR)
 
-IF(DEB)
-  SET(INSTALL_LAYOUT "DEB")
-ENDIF(DEB)
-
 INCLUDE(mysql_version)
-INCLUDE(cpack_rpm)
 INCLUDE(cpack_source_ignore_files)
 INCLUDE(install_layout)
+INCLUDE(cpack_rpm)
 
 # Add macros
 INCLUDE(character_sets)
@@ -333,9 +329,10 @@ INCLUDE(cmake/abi_check.cmake)
 INCLUDE(cmake/tags.cmake)
 
 IF(WIN32)
-  ADD_SUBDIRECTORY(win/packaging)
   ADD_SUBDIRECTORY(win/upgrade_wizard)
+  ADD_SUBDIRECTORY(win/packaging)
 ENDIF()
+ADD_SUBDIRECTORY(packaging/solaris)
 
 CONFIGURE_FILE(config.h.cmake   ${CMAKE_BINARY_DIR}/include/my_config.h)
 CONFIGURE_FILE(config.h.cmake   ${CMAKE_BINARY_DIR}/include/config.h)

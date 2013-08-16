@@ -11,7 +11,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA */
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA */
 
 #ifndef SQL_ERROR_H
 #define SQL_ERROR_H
@@ -191,6 +191,17 @@ public:
   MYSQL_ERROR::enum_warning_level get_level() const
   { return m_level; }
 
+  /** check if condition was handled by a condition handler */
+  bool handled() const
+  {
+    return m_handled;
+  }
+  /** mark that condition was handled */
+  void mark_handled()
+  {
+    m_handled= 1;
+  }
+
 private:
   /*
     The interface of MYSQL_ERROR is mostly private, by design,
@@ -305,6 +316,9 @@ private:
 
   /** MySQL extension, MYSQL_ERRNO condition item. */
   uint m_sql_errno;
+
+  /** Marker if error/warning was handled by a continue handler */
+  bool m_handled;
 
   /**
     SQL RETURNED_SQLSTATE condition item.

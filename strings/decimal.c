@@ -1,5 +1,5 @@
-/* Copyright (c) 2004, 2011, Oracle and/or its affiliates.
-   Copyright (c) 2009, 2011, Monty Program Ab
+/* Copyright (c) 2004, 2013, Oracle and/or its affiliates.
+   Copyright (c) 2009, 2011, Monty Program Ab.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA */
 
 /*
 =======================================================================
@@ -669,7 +669,7 @@ int decimal_shift(decimal_t *dec, int shift)
     if (do_left)
     {
       do_mini_left_shift(dec, l_mini_shift, beg, end);
-      mini_shift=- l_mini_shift;
+      mini_shift= -l_mini_shift;
     }
     else
     {
@@ -1445,7 +1445,9 @@ int decimal_bin_size(int precision, int scale)
       intg0=intg/DIG_PER_DEC1, frac0=scale/DIG_PER_DEC1,
       intg0x=intg-intg0*DIG_PER_DEC1, frac0x=scale-frac0*DIG_PER_DEC1;
 
-  DBUG_ASSERT(scale >= 0 && precision > 0 && scale <= precision);
+  DBUG_ASSERT(scale >= 0);
+  DBUG_ASSERT(precision > 0);
+  DBUG_ASSERT(scale <= precision);
   return intg0*sizeof(dec1)+dig2bytes[intg0x]+
          frac0*sizeof(dec1)+dig2bytes[frac0x];
 }
