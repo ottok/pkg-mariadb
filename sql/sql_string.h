@@ -2,8 +2,8 @@
 #define SQL_STRING_INCLUDED
 
 /*
-   Copyright (c) 2000, 2012, Oracle and/or its affiliates.
-   Copyright (c) 2008, 2011, Monty Program Ab
+   Copyright (c) 2000, 2013, Oracle and/or its affiliates.
+   Copyright (c) 2008, 2013, Monty Program Ab.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -311,6 +311,7 @@ public:
       DBUG_ASSERT(!s.uses_buffer_owned_by(this));
       free();
       Ptr=s.Ptr ; str_length=s.str_length ; Alloced_length=s.Alloced_length;
+      str_charset=s.str_charset;
     }
     return *this;
   }
@@ -363,6 +364,16 @@ public:
       Ptr[str_length++]=chr;
     }
     return 0;
+  }
+  bool append_hex(const char *src, uint32 srclen)
+  {
+    for (const char *end= src + srclen ; src != end ; src++)
+    {
+      if (append(_dig_vec_lower[((uchar) *src) >> 4]) ||
+          append(_dig_vec_lower[((uchar) *src) & 0x0F]))
+        return true;
+    }
+    return false;
   }
   bool fill(uint32 max_length,char fill);
   void strip_sp();

@@ -1,6 +1,6 @@
 /*
-   Copyright (c) 2000, 2012, Oracle and/or its affiliates.
-   Copyright (c) 2008, 2012, Monty Program Ab
+   Copyright (c) 2000, 2013, Oracle and/or its affiliates.
+   Copyright (c) 2008, 2013, Monty Program Ab.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1166,10 +1166,16 @@ MYSQL_ERROR* THD::raise_condition(uint sql_errno,
 
   query_cache_abort(&query_cache_tls);
 
-  /* When simulating OOM, skip writing to error log to avoid mtr errors */
-  DBUG_EXECUTE_IF("simulate_out_of_memory", DBUG_RETURN(NULL););
-
-  cond= warning_info->push_warning(this, sql_errno, sqlstate, level, msg);
+  /* 
+     Avoid pushing a condition for fatal out of memory errors as this will 
+     require memory allocation and therefore might fail. Non fatal out of 
+     memory errors can occur if raised by SIGNAL/RESIGNAL statement.
+  */
+  if (!(is_fatal_error && (sql_errno == EE_OUTOFMEMORY ||
+                           sql_errno == ER_OUTOFMEMORY)))
+  {
+    cond= warning_info->push_warning(this, sql_errno, sqlstate, level, msg);
+  }
   DBUG_RETURN(cond);
 }
 
@@ -1383,14 +1389,16 @@ void THD::cleanup(void)
 #error xid_state in the cache should be replaced by the allocated value
   }
 #endif
-  {
-    transaction.xid_state.xa_state= XA_NOTR;
-    trans_rollback(this);
-    xid_cache_delete(&transaction.xid_state);
-  }
+
+  mysql_ha_cleanup(this);
+
+  close_temporary_tables(this);
+
+  transaction.xid_state.xa_state= XA_NOTR;
+  trans_rollback(this);
+  xid_cache_delete(&transaction.xid_state);
 
   locked_tables_list.unlock_locked_tables(this);
-  mysql_ha_cleanup(this);
 
   DBUG_ASSERT(open_tables == NULL);
   /*
@@ -1421,7 +1429,6 @@ void THD::cleanup(void)
 
   delete_dynamic(&user_var_events);
   my_hash_free(&user_vars);
-  close_temporary_tables(this);
   sp_cache_clear(&sp_proc_cache);
   sp_cache_clear(&sp_func_cache);
 
@@ -1444,7 +1451,6 @@ THD::~THD()
   DBUG_ENTER("~THD()");
   /* Ensure that no one is using THD */
   mysql_mutex_lock(&LOCK_thd_data);
-  mysys_var=0;					// Safety (shouldn't be needed)
   mysql_mutex_unlock(&LOCK_thd_data);
 
   /* Close connection */
@@ -1672,8 +1678,8 @@ void THD::awake(killed_state state_to_set)
           mysql_mutex_unlock(mysys_var->current_mutex);
           break;
         }
+        my_sleep(1000000L / WAIT_FOR_KILL_TRY_TIMES);
       }
-      my_sleep(1000000L / WAIT_FOR_KILL_TRY_TIMES);
     }
     mysql_mutex_unlock(&mysys_var->mutex);
   }
@@ -1850,6 +1856,19 @@ void THD::cleanup_after_query()
     stmt_depends_on_first_successful_insert_id_in_prev_stmt= 0;
     auto_inc_intervals_in_cur_stmt_for_binlog.empty();
     rand_used= 0;
+#ifndef EMBEDDED_LIBRARY
+    /*
+      Clean possible unused INSERT_ID events by current statement.
+      is_update_query() is needed to ignore SET statements:
+        Statements that don't update anything directly and don't
+        used stored functions. This is mostly necessary to ignore
+        statements in binlog between SET INSERT_ID and DML statement
+        which is intended to consume its event (there can be other
+        SET statements between them).
+    */
+    if ((rli_slave || rli_fake) && is_update_query(lex->sql_command))
+      auto_inc_intervals_forced.empty();
+#endif
   }
   if (first_successful_insert_id_in_cur_stmt > 0)
   {
@@ -2071,7 +2090,7 @@ CHANGED_TABLE_LIST* THD::changed_table_dup(const char *key, long key_length)
 				      key_length + 1);
   if (!new_table)
   {
-    my_error(EE_OUTOFMEMORY, MYF(ME_BELL),
+    my_error(EE_OUTOFMEMORY, MYF(ME_BELL+ME_FATALERROR),
              ALIGN_SIZE(sizeof(TABLE_LIST)) + key_length + 1);
     killed= KILL_CONNECTION;
     return 0;
@@ -2523,7 +2542,7 @@ select_export::prepare(List<Item> &list, SELECT_LEX_UNIT *u)
   bool string_results= FALSE, non_string_results= FALSE;
   unit= u;
   if ((uint) strlen(exchange->file_name) + NAME_LEN >= FN_REFLEN)
-    strmake(path,exchange->file_name,FN_REFLEN-1);
+    strmake_buf(path,exchange->file_name);
 
   write_cs= exchange->cs ? exchange->cs : &my_charset_bin;
 
@@ -2661,7 +2680,7 @@ int select_export::send_data(List<Item> &items)
       set_if_smaller(estimated_bytes, UINT_MAX32);
       if (cvt_str.realloc((uint32) estimated_bytes))
       {
-        my_error(ER_OUTOFMEMORY, MYF(0), (uint32) estimated_bytes);
+        my_error(ER_OUTOFMEMORY, MYF(ME_FATALERROR), (uint32) estimated_bytes);
         goto err;
       }
 
@@ -3097,42 +3116,13 @@ int select_exists_subselect::send_data(List<Item> &items)
 int select_dumpvar::prepare(List<Item> &list, SELECT_LEX_UNIT *u)
 {
   unit= u;
-  List_iterator_fast<my_var> var_li(var_list);
-  List_iterator_fast<Item> it(list);
-  Item *item;
-  my_var *mv;
-  Item_func_set_user_var **suv;
   
   if (var_list.elements != list.elements)
   {
     my_message(ER_WRONG_NUMBER_OF_COLUMNS_IN_SELECT,
                ER(ER_WRONG_NUMBER_OF_COLUMNS_IN_SELECT), MYF(0));
     return 1;
-  }
-
-  /*
-    Iterate over the destination variables and mark them as being
-    updated in this query.
-    We need to do this at JOIN::prepare time to ensure proper
-    const detection of Item_func_get_user_var that is determined
-    by the presence of Item_func_set_user_vars
-  */
-
-  suv= set_var_items= (Item_func_set_user_var **) 
-    sql_alloc(sizeof(Item_func_set_user_var *) * list.elements);
-
-  while ((mv= var_li++) && (item= it++))
-  {
-    if (!mv->local)
-    {
-      *suv= new Item_func_set_user_var(mv->s, item);
-      (*suv)->fix_fields(thd, 0);
-    }
-    else
-      *suv= NULL;
-    suv++;
-  }
-
+  }               
   return 0;
 }
 
@@ -3452,7 +3442,6 @@ int select_dumpvar::send_data(List<Item> &items)
   List_iterator<Item> it(items);
   Item *item;
   my_var *mv;
-  Item_func_set_user_var **suv;
   DBUG_ENTER("select_dumpvar::send_data");
 
   if (unit->offset_limit_cnt)
@@ -3465,19 +3454,20 @@ int select_dumpvar::send_data(List<Item> &items)
     my_message(ER_TOO_MANY_ROWS, ER(ER_TOO_MANY_ROWS), MYF(0));
     DBUG_RETURN(1);
   }
-  for (suv= set_var_items; ((mv= var_li++) && (item= it++)); suv++)
+  while ((mv= var_li++) && (item= it++))
   {
     if (mv->local)
     {
-      DBUG_ASSERT(!*suv);
       if (thd->spcont->set_variable(thd, mv->offset, &item))
 	    DBUG_RETURN(1);
     }
     else
     {
-      DBUG_ASSERT(*suv);
-      (*suv)->save_item_result(item);
-      if ((*suv)->update())
+      Item_func_set_user_var *suv= new Item_func_set_user_var(mv->s, item);
+      suv->save_item_result(item);
+      if (suv->fix_fields(thd, 0))
+        DBUG_RETURN (1);
+      if (suv->update())
         DBUG_RETURN (1);
     }
   }
@@ -4467,9 +4457,14 @@ bool xid_cache_insert(XID *xid, enum xa_states xa_state)
 bool xid_cache_insert(XID_STATE *xid_state)
 {
   mysql_mutex_lock(&LOCK_xid_cache);
-  DBUG_ASSERT(my_hash_search(&xid_cache, xid_state->xid.key(),
-                             xid_state->xid.key_length())==0);
-  my_bool res=my_hash_insert(&xid_cache, (uchar*)xid_state);
+  if (my_hash_search(&xid_cache, xid_state->xid.key(),
+      xid_state->xid.key_length()))
+  {
+    mysql_mutex_unlock(&LOCK_xid_cache);
+    my_error(ER_XAER_DUPID, MYF(0));
+    return true;
+  }
+  bool res= my_hash_insert(&xid_cache, (uchar*)xid_state);
   mysql_mutex_unlock(&LOCK_xid_cache);
   return res;
 }
@@ -4584,7 +4579,7 @@ void xid_cache_delete(XID_STATE *xid_state)
 int THD::decide_logging_format(TABLE_LIST *tables)
 {
   DBUG_ENTER("THD::decide_logging_format");
-  DBUG_PRINT("info", ("query: %s", query()));
+  DBUG_PRINT("info", ("Query: %s", query()));
   DBUG_PRINT("info", ("variables.binlog_format: %lu",
                       variables.binlog_format));
   DBUG_PRINT("info", ("lex->get_stmt_unsafe_flags(): 0x%x",
@@ -4844,6 +4839,46 @@ int THD::decide_logging_format(TABLE_LIST *tables)
     DBUG_PRINT("info", ("decision: logging in %s format",
                         is_current_stmt_binlog_format_row() ?
                         "ROW" : "STATEMENT"));
+
+    if (variables.binlog_format == BINLOG_FORMAT_ROW &&
+        (lex->sql_command == SQLCOM_UPDATE ||
+         lex->sql_command == SQLCOM_UPDATE_MULTI ||
+         lex->sql_command == SQLCOM_DELETE ||
+         lex->sql_command == SQLCOM_DELETE_MULTI))
+    {
+      String table_names;
+      /*
+        Generate a warning for UPDATE/DELETE statements that modify a
+        BLACKHOLE table, as row events are not logged in row format.
+      */
+      for (TABLE_LIST *table= tables; table; table= table->next_global)
+      {
+        if (table->placeholder())
+          continue;
+        if (table->table->file->ht->db_type == DB_TYPE_BLACKHOLE_DB &&
+            table->lock_type >= TL_WRITE_ALLOW_WRITE)
+        {
+            table_names.append(table->table_name);
+            table_names.append(",");
+        }
+      }
+      if (!table_names.is_empty())
+      {
+        bool is_update= (lex->sql_command == SQLCOM_UPDATE ||
+                         lex->sql_command == SQLCOM_UPDATE_MULTI);
+        /*
+          Replace the last ',' with '.' for table_names
+        */
+        table_names.replace(table_names.length()-1, 1, ".", 1);
+        push_warning_printf(this, MYSQL_ERROR::WARN_LEVEL_WARN,
+                            ER_UNKNOWN_ERROR,
+                            "Row events are not logged for %s statements "
+                            "that modify BLACKHOLE tables in row format. "
+                            "Table(s): '%-.192s'",
+                            is_update ? "UPDATE" : "DELETE",
+                            table_names.c_ptr());
+      }
+    }
   }
 #ifndef DBUG_OFF
   else

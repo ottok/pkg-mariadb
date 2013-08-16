@@ -187,7 +187,7 @@ Description: MariaDB database server binaries
 Package: mariadb-server
 Section: database
 Architecture: all
-Depends: mariadb-server-5.5, ${misc:Depends}
+Depends: mariadb-server-5.5 (= ${source:Version}), ${misc:Depends}
 Description: MariaDB database server (metapackage depending on the latest version)
  This is an empty package that depends on the current "best" version of
  mariadb-server (currently mariadb-server-5.5), as determined by the MariaDB
@@ -203,7 +203,7 @@ Description: MariaDB database server (metapackage depending on the latest versio
 Package: mariadb-client
 Section: database
 Architecture: all
-Depends: mariadb-client-5.5, ${misc:Depends}
+Depends: mariadb-client-5.5 (= ${source:Version}), ${misc:Depends}
 Description: MariaDB database client (metapackage depending on the latest version)
  This is an empty package that depends on the current "best" version of
  mariadb-client (currently mariadb-client-5.5), as determined by the MariaDB
@@ -213,8 +213,8 @@ Description: MariaDB database client (metapackage depending on the latest versio
 Package: mariadb-test
 Section: database
 Architecture: all
-Depends: mariadb-test-5.5, ${misc:Depends}
-Description: MariaDB database regression test suite (metapackage for latest version)
+Depends: mariadb-test-5.5 (= ${source:Version})
+Description: MariaDB database regression test suite (metapackage depending on the latest version)
  This is an empty package that depends on the current "best" version of
  mariadb-test (currently mariadb-test-5.5), as determined by the MariaDB
  maintainers.

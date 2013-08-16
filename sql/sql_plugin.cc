@@ -35,6 +35,8 @@
 #include <mysql/plugin_auth.h>
 #include "lock.h"                               // MYSQL_LOCK_IGNORE_TIMEOUT
 #include <mysql/plugin_auth.h>
+#include "sql_plugin_compat.h"
+
 #define REPORT_TO_LOG  1
 #define REPORT_TO_USER 2
 
@@ -135,7 +137,7 @@ static int min_plugin_info_interface_version[MYSQL_MAX_PLUGIN_TYPE_NUM]=
   MYSQL_INFORMATION_SCHEMA_INTERFACE_VERSION,
   MYSQL_AUDIT_INTERFACE_VERSION,
   MYSQL_REPLICATION_INTERFACE_VERSION,
-  MYSQL_AUTHENTICATION_INTERFACE_VERSION
+  MIN_AUTHENTICATION_INTERFACE_VERSION
 };
 static int cur_plugin_info_interface_version[MYSQL_MAX_PLUGIN_TYPE_NUM]=
 {
@@ -2030,9 +2032,13 @@ static bool finalize_install(THD *thd, TABLE *table, const LEX_STRING *name)
                           ER_CANT_INITIALIZE_UDF, ER(ER_CANT_INITIALIZE_UDF),
                           name->str, "Plugin is disabled");
   }
+  else if (tmp->state != PLUGIN_IS_UNINITIALIZED)
+  {
+    /* already installed */
+    return 0;
+  }
   else
   {
-    DBUG_ASSERT(tmp->state == PLUGIN_IS_UNINITIALIZED);
     if (plugin_initialize(tmp))
     {
       report_error(REPORT_TO_USER, ER_CANT_INITIALIZE_UDF, name->str,
@@ -2172,9 +2178,7 @@ static bool do_uninstall(THD *thd, TABLE *table, const LEX_STRING *name)
   }
   if (!plugin->plugin_dl)
   {
-    push_warning(thd, MYSQL_ERROR::WARN_LEVEL_WARN,
-                 WARN_PLUGIN_DELETE_BUILTIN, ER(WARN_PLUGIN_DELETE_BUILTIN));
-    my_error(ER_SP_DOES_NOT_EXIST, MYF(0), "PLUGIN", name->str);
+    my_error(ER_PLUGIN_DELETE_BUILTIN, MYF(0));
     return 1;
   }
   if (plugin->load_option == PLUGIN_FORCE_PLUS_PERMANENT)

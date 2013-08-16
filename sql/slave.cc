@@ -159,6 +159,37 @@ static int terminate_slave_thread(THD *thd,
                                   volatile uint *slave_running,
                                   bool skip_lock);
 static bool check_io_slave_killed(THD *thd, Master_info *mi, const char *info);
+/*
+  Function to set the slave's max_allowed_packet based on the value
+  of slave_max_allowed_packet.
+
+    @in_param    thd    Thread handler for slave
+    @in_param    mysql  MySQL connection handle
+*/
+
+static void set_slave_max_allowed_packet(THD *thd, MYSQL *mysql)
+{
+  DBUG_ENTER("set_slave_max_allowed_packet");
+  // thd and mysql must be valid
+  DBUG_ASSERT(thd && mysql);
+
+  thd->variables.max_allowed_packet= slave_max_allowed_packet;
+  thd->net.max_packet_size= slave_max_allowed_packet;
+  /*
+    Adding MAX_LOG_EVENT_HEADER_LEN to the max_packet_size on the I/O
+    thread and the mysql->option max_allowed_packet, since a
+    replication event can become this much  larger than
+    the corresponding packet (query) sent from client to master.
+  */
+  thd->net.max_packet_size+= MAX_LOG_EVENT_HEADER;
+  /*
+    Skipping the setting of mysql->net.max_packet size to slave
+    max_allowed_packet since this is done during mysql_real_connect.
+  */
+  mysql->options.max_allowed_packet=
+    slave_max_allowed_packet+MAX_LOG_EVENT_HEADER;
+  DBUG_VOID_RETURN;
+}
 
 /*
   Find out which replications threads are running
@@ -359,16 +390,13 @@ int init_recovery(Master_info* mi, const char** errmsg)
   {
     mi->master_log_pos= max(BIN_LOG_HEADER_SIZE,
                              rli->group_master_log_pos);
-    strmake(mi->master_log_name, rli->group_master_log_name,
-            sizeof(mi->master_log_name)-1);
+    strmake_buf(mi->master_log_name, rli->group_master_log_name);
  
     sql_print_warning("Recovery from master pos %ld and file %s.",
                       (ulong) mi->master_log_pos, mi->master_log_name);
  
-    strmake(rli->group_relay_log_name, rli->relay_log.get_log_fname(),
-            sizeof(rli->group_relay_log_name)-1);
-    strmake(rli->event_relay_log_name, rli->relay_log.get_log_fname(),
-            sizeof(mi->rli.event_relay_log_name)-1);
+    strmake_buf(rli->group_relay_log_name, rli->relay_log.get_log_fname());
+    strmake_buf(rli->event_relay_log_name, rli->relay_log.get_log_fname());
  
     rli->group_relay_log_pos= rli->event_relay_log_pos= BIN_LOG_HEADER_SIZE;
   }
@@ -1216,6 +1244,7 @@ static int get_master_version_and_clock(MYSQL* mysql, Master_info* mi)
   int err_code= 0;
   MYSQL_RES *master_res= 0;
   MYSQL_ROW master_row;
+  uint version= mysql_get_server_version(mysql) / 10000;
   DBUG_ENTER("get_master_version_and_clock");
 
   /*
@@ -1236,20 +1265,20 @@ static int get_master_version_and_clock(MYSQL* mysql, Master_info* mi)
     /*
       Note the following switch will bug when we have MySQL branch 30 ;)
     */
-    switch (*mysql->server_version)
+    switch (version)
     {
-    case '0':
-    case '1':
-    case '2':
+    case 0:
+    case 1:
+    case 2:
       errmsg = "Master reported unrecognized MySQL version";
       err_code= ER_SLAVE_FATAL_ERROR;
       sprintf(err_buff, ER(err_code), errmsg);
       break;
-    case '3':
+    case 3:
       mi->rli.relay_log.description_event_for_queue= new
         Format_description_log_event(1, mysql->server_version);
       break;
-    case '4':
+    case 4:
       mi->rli.relay_log.description_event_for_queue= new
         Format_description_log_event(3, mysql->server_version);
       break;
@@ -1334,6 +1363,7 @@ static int get_master_version_and_clock(MYSQL* mysql, Master_info* mi)
     unavailable (very old master not supporting UNIX_TIMESTAMP()?).
   */
 
+#ifdef ENABLED_DEBUG_SYNC
   DBUG_EXECUTE_IF("dbug.before_get_UNIX_TIMESTAMP",
                   {
                     const char act[]=
@@ -1343,6 +1373,7 @@ static int get_master_version_and_clock(MYSQL* mysql, Master_info* mi)
                     DBUG_ASSERT(!debug_sync_set_action(current_thd,
                                                        STRING_WITH_LEN(act)));
                   };);
+#endif
 
   master_res= NULL;
   if (!mysql_real_query(mysql, STRING_WITH_LEN("SELECT UNIX_TIMESTAMP()")) &&
@@ -1384,6 +1415,7 @@ static int get_master_version_and_clock(MYSQL* mysql, Master_info* mi)
     Note: we could have put a @@SERVER_ID in the previous SELECT
     UNIX_TIMESTAMP() instead, but this would not have worked on 3.23 masters.
   */
+#ifdef ENABLED_DEBUG_SYNC
   DBUG_EXECUTE_IF("dbug.before_get_SERVER_ID",
                   {
                     const char act[]=
@@ -1393,6 +1425,7 @@ static int get_master_version_and_clock(MYSQL* mysql, Master_info* mi)
                     DBUG_ASSERT(!debug_sync_set_action(current_thd, 
                                                        STRING_WITH_LEN(act)));
                   };);
+#endif
   master_res= NULL;
   master_row= NULL;
   if (!mysql_real_query(mysql,
@@ -1466,10 +1499,10 @@ maybe it is a *VERY OLD MASTER*.");
   */
 
   /* redundant with rest of code but safer against later additions */
-  if (*mysql->server_version == '3')
+  if (version == 3)
     goto err;
 
-  if (*mysql->server_version == '4')
+  if (version == 4)
   {
     master_res= NULL;
     if (!mysql_real_query(mysql,
@@ -1532,7 +1565,7 @@ inconsistency if replicated data deals with collation.");
     This check is only necessary for 4.x masters (and < 5.0.4 masters but
     those were alpha).
   */
-  if (*mysql->server_version == '4')
+  if (version == 4)
   {
     master_res= NULL;
     if (!mysql_real_query(mysql, STRING_WITH_LEN("SELECT @@GLOBAL.TIME_ZONE")) &&
@@ -2276,12 +2309,6 @@ static int init_slave_thread(THD* thd, SLAVE_THD_TYPE thd_type)
     SYSTEM_THREAD_SLAVE_SQL : SYSTEM_THREAD_SLAVE_IO;
   thd->security_ctx->skip_grants();
   my_net_init(&thd->net, 0);
-/*
-  Adding MAX_LOG_EVENT_HEADER_LEN to the max_allowed_packet on all
-  slave threads, since a replication event can become this much larger
-  than the corresponding packet (query) sent from client to master.
-*/
-  thd->variables.max_allowed_packet= slave_max_allowed_packet;
   thd->slave_thread = 1;
   thd->enable_slow_log= opt_log_slow_slave_statements;
   thd->variables.log_slow_filter= global_system_variables.log_slow_filter;
@@ -3065,13 +3092,6 @@ pthread_handler_t handle_slave_io(void *arg)
                           mi->user, mi->host, mi->port,
 			  IO_RPL_LOG_NAME,
 			  llstr(mi->master_log_pos,llbuff));
-  /*
-    Adding MAX_LOG_EVENT_HEADER_LEN to the max_packet_size on the I/O
-    thread, since a replication event can become this much larger than
-    the corresponding packet (query) sent from client to master.
-  */
-    thd->net.max_packet_size= slave_max_allowed_packet;
-    mysql->net.max_packet_size= thd->net.max_packet_size+= MAX_LOG_EVENT_HEADER;
   }
   else
   {
@@ -3081,6 +3101,7 @@ pthread_handler_t handle_slave_io(void *arg)
 
 connected:
 
+#ifdef ENABLED_DEBUG_SYNC
     DBUG_EXECUTE_IF("dbug.before_get_running_status_yes",
                     {
                       const char act[]=
@@ -3090,6 +3111,7 @@ connected:
                       DBUG_ASSERT(!debug_sync_set_action(thd, 
                                                          STRING_WITH_LEN(act)));
                     };);
+#endif
 
   // TODO: the assignment below should be under mutex (5.0)
   mi->slave_running= MYSQL_SLAVE_RUN_CONNECT;
@@ -3581,8 +3603,8 @@ log '%s' at position %s, relay log '%s' position: %s", RPL_LOG_NAME,
   mysql_mutex_lock(&rli->data_lock);
   if (rli->slave_skip_counter)
   {
-    strmake(saved_log_name, rli->group_relay_log_name, FN_REFLEN - 1);
-    strmake(saved_master_log_name, rli->group_master_log_name, FN_REFLEN - 1);
+    strmake_buf(saved_log_name, rli->group_relay_log_name);
+    strmake_buf(saved_master_log_name, rli->group_master_log_name);
     saved_log_pos= rli->group_relay_log_pos;
     saved_master_log_pos= rli->group_master_log_pos;
     saved_skip= rli->slave_skip_counter;
@@ -4634,7 +4656,7 @@ static int connect_to_master(THD* thd, MYSQL* mysql, Master_info* mi,
   ulong err_count=0;
   char llbuff[22];
   DBUG_ENTER("connect_to_master");
-
+  set_slave_max_allowed_packet(thd, mysql);
 #ifndef DBUG_OFF
   mi->events_till_disconnect = disconnect_slave_event_count;
 #endif
@@ -5216,8 +5238,7 @@ static Log_event* next_event(Relay_log_info* rli)
           goto err;
         }
         rli->event_relay_log_pos = BIN_LOG_HEADER_SIZE;
-        strmake(rli->event_relay_log_name,rli->linfo.log_file_name,
-                sizeof(rli->event_relay_log_name)-1);
+        strmake_buf(rli->event_relay_log_name,rli->linfo.log_file_name);
         flush_relay_log_info(rli);
       }
 

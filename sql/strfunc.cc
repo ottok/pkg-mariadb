@@ -11,7 +11,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA */
 
 /* Some useful string utility functions used by the MySQL server */
 
@@ -85,7 +85,7 @@ ulonglong find_set(TYPELIB *lib, const char *str, uint length, CHARSET_INFO *cs,
         *set_warning= 1;
       }
       else
-        found|= ((longlong) 1 << (find - 1));
+        found|= 1ULL << (find - 1);
       if (pos >= end)
         break;
       start= pos + mblen;

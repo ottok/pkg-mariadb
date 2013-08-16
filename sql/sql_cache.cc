@@ -466,6 +466,8 @@ static void make_base_query(String *new_query,
   /* The following is guaranteed by the query_cache interface */
   DBUG_ASSERT(query[query_length] == 0);
   DBUG_ASSERT(!is_white_space(query[0]));
+  /* We do not support UCS2, UTF16, UTF32 as a client character set */
+  DBUG_ASSERT(current_thd->variables.character_set_client->mbminlen == 1);
 
   new_query->length(0);           // Don't copy anything from old buffer
   if (new_query->realloc(query_length + additional_length))
@@ -828,18 +830,18 @@ void Query_cache_block::destroy()
   DBUG_VOID_RETURN;
 }
 
-inline uint Query_cache_block::headers_len()
+uint Query_cache_block::headers_len()
 {
   return (ALIGN_SIZE(sizeof(Query_cache_block_table)*n_tables) +
 	  ALIGN_SIZE(sizeof(Query_cache_block)));
 }
 
-inline uchar* Query_cache_block::data(void)
+uchar* Query_cache_block::data(void)
 {
   return (uchar*)( ((uchar*)this) + headers_len() );
 }
 
-inline Query_cache_query * Query_cache_block::query()
+Query_cache_query * Query_cache_block::query()
 {
 #ifndef DBUG_OFF
   if (type != QUERY)
@@ -848,7 +850,7 @@ inline Query_cache_query * Query_cache_block::query()
   return (Query_cache_query *) data();
 }
 
-inline Query_cache_table * Query_cache_block::table()
+Query_cache_table * Query_cache_block::table()
 {
 #ifndef DBUG_OFF
   if (type != TABLE)
@@ -857,7 +859,7 @@ inline Query_cache_table * Query_cache_block::table()
   return (Query_cache_table *) data();
 }
 
-inline Query_cache_result * Query_cache_block::result()
+Query_cache_result * Query_cache_block::result()
 {
 #ifndef DBUG_OFF
   if (type != RESULT && type != RES_CONT && type != RES_BEG &&
@@ -867,7 +869,7 @@ inline Query_cache_result * Query_cache_block::result()
   return (Query_cache_result *) data();
 }
 
-inline Query_cache_block_table * Query_cache_block::table(TABLE_COUNTER_TYPE n)
+Query_cache_block_table * Query_cache_block::table(TABLE_COUNTER_TYPE n)
 {
   return ((Query_cache_block_table *)
 	  (((uchar*)this)+ALIGN_SIZE(sizeof(Query_cache_block)) +
@@ -2430,7 +2432,28 @@ void Query_cache::init()
   m_cache_status= Query_cache::OK;
   m_requests_in_progress= 0;
   initialized = 1;
-  query_state_map= default_charset_info->state_map;
+  /*
+    Using state_map from latin1 should be fine in all cases:
+    1. We do not support UCS2, UTF16, UTF32 as a client character set.
+    2. The other character sets are compatible on the lower ASCII-range
+    0x00-0x20, and have the following characters marked as spaces:
+    
+    0x09 TAB
+    0x0A LINE FEED
+    0x0B VERTICAL TAB
+    0x0C FORM FEED
+    0x0D CARRIAGE RETUR
+    0x20 SPACE
+    
+    Additionally, only some of the ASCII-compatible character sets
+    (including latin1) can have 0xA0 mapped to "NON-BREAK SPACE"
+    and thus marked as space.
+    That should not be a problem for those charsets that map 0xA0
+    to something else: the parser will just return syntax error
+    if this character appears straight in the query
+    (i.e. not inside a string literal or comment).
+  */
+  query_state_map= my_charset_latin1.state_map;
   /*
     If we explicitly turn off query cache from the command line query
     cache will be disabled for the reminder of the server life
@@ -3123,8 +3146,8 @@ void Query_cache::invalidate_table(THD *thd, TABLE_LIST *table_list)
     char key[MAX_DBKEY_LENGTH];
     uint key_length;
 
-    key_length=(uint) (strmov(strmov(key,table_list->db)+1,
-			      table_list->table_name) -key)+ 1;
+    key_length= create_table_def_key(key, table_list->db,
+                                     table_list->table_name);
 
     // We don't store temporary tables => no key_length+=4 ...
     invalidate_table(thd, (uchar *)key, key_length);
@@ -3242,8 +3265,8 @@ Query_cache::register_tables_from_list(THD *thd, TABLE_LIST *tables_used,
       DBUG_PRINT("qcache", ("view: %s  db: %s",
                             tables_used->view_name.str,
                             tables_used->view_db.str));
-      key_length= (uint) (strmov(strmov(key, tables_used->view_db.str) + 1,
-                                 tables_used->view_name.str) - key) + 1;
+      key_length= create_table_def_key(key, tables_used->view_db.str,
+                                       tables_used->view_name.str);
       /*
         There are not callback function for for VIEWs
       */
@@ -3963,6 +3986,18 @@ Query_cache::process_and_count_tables(THD *thd, TABLE_LIST *tables_used,
 
 
 /*
+In non-embedded QC intercepts result in net_real_write
+but if we have no net.vio then net_real_write
+will not be called, so QC can't get results of the query
+*/
+#ifdef EMBEDDED_LIBRARY
+#define qc_is_able_to_intercept_result(T) 1
+#else
+#define qc_is_able_to_intercept_result(T) ((T)->net.vio)
+#endif
+
+
+/*
   If query is cacheable return number tables in query
   (query without tables are not cached)
 */
@@ -3977,7 +4012,8 @@ Query_cache::is_cacheable(THD *thd, LEX *lex,
   if (thd->lex->safe_to_cache_query &&
       (thd->variables.query_cache_type == 1 ||
        (thd->variables.query_cache_type == 2 && (lex->select_lex.options &
-						 OPTION_TO_QUERY_CACHE))))
+						 OPTION_TO_QUERY_CACHE))) &&
+      qc_is_able_to_intercept_result(thd))
   {
     DBUG_PRINT("qcache", ("options: %lx  %lx  type: %u",
                           (long) OPTION_TO_QUERY_CACHE,
@@ -3999,11 +4035,12 @@ Query_cache::is_cacheable(THD *thd, LEX *lex,
   }
 
   DBUG_PRINT("qcache",
-	     ("not interesting query: %d or not cacheable, options %lx %lx  type: %u",
+	     ("not interesting query: %d or not cacheable, options %lx %lx  type: %u  net->vio present: %u",
 	      (int) lex->sql_command,
 	      (long) OPTION_TO_QUERY_CACHE,
 	      (long) lex->select_lex.options,
-	      (int) thd->variables.query_cache_type));
+	      (int) thd->variables.query_cache_type,
+              (uint) test(qc_is_able_to_intercept_result(thd))));
   DBUG_RETURN(0);
 }
 
@@ -4288,14 +4325,13 @@ my_bool Query_cache::move_by_type(uchar **border,
   case Query_cache_block::RESULT:
   {
     DBUG_PRINT("qcache", ("block 0x%lx RES* (%d)", (ulong) block,
-			(int) block->type));
+               (int) block->type));
     if (*border == 0)
       break;
-    Query_cache_block *query_block = block->result()->parent(),
-		      *next = block->next,
-		      *prev = block->prev;
-    Query_cache_block::block_type type = block->type;
+    Query_cache_block *query_block= block->result()->parent();
     BLOCK_LOCK_WR(query_block);
+    Query_cache_block *next= block->next, *prev= block->prev;
+    Query_cache_block::block_type type= block->type;
     ulong len = block->length, used = block->used;
     Query_cache_block *pprev = block->pprev,
 		      *pnext = block->pnext,
@@ -4457,8 +4493,9 @@ uint Query_cache::filename_2_table_key (char *key, const char *path,
   *db_length= (filename - dbname) - 1;
   DBUG_PRINT("qcache", ("table '%-.*s.%s'", *db_length, dbname, filename));
 
-  DBUG_RETURN((uint) (strmov(strmake(key, dbname, *db_length) + 1,
-			     filename) -key) + 1);
+  DBUG_RETURN((uint) (strmake(strmake(key, dbname,
+                                      min(*db_length, NAME_LEN)) + 1,
+                              filename, NAME_LEN) - key) + 1);
 }
 
 /****************************************************************************

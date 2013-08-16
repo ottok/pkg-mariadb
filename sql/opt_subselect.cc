@@ -1509,6 +1509,9 @@ static bool convert_subq_to_sj(JOIN *parent_join, Item_in_subselect *subq_pred)
   */
   parent_lex->leaf_tables.concat(&subq_lex->leaf_tables);
 
+  if (subq_lex->options & OPTION_SCHEMA_TABLE)
+    parent_lex->options |= OPTION_SCHEMA_TABLE;
+
   /*
     Same as above for next_local chain
     (a theory: a next_local chain always starts with ::leaf_tables
@@ -1724,6 +1727,9 @@ static bool convert_subq_to_jtbm(JOIN *parent_join,
     make_join_statistics() and co. can find it.
   */
   parent_lex->leaf_tables.push_back(jtbm);
+
+  if (subq_pred->unit->first_select()->options & OPTION_SCHEMA_TABLE)
+    parent_lex->options |= OPTION_SCHEMA_TABLE;
 
   /*
     Same as above for TABLE_LIST::next_local chain
@@ -2542,6 +2548,10 @@ void advance_sj_state(JOIN *join, table_map remaining_tables, uint idx,
           /* Mark strategy as used */ 
           (*strategy)->mark_used();
           pos->sj_strategy= sj_strategy;
+          if (sj_strategy == SJ_OPT_MATERIALIZE)
+            join->sjm_lookup_tables |= handled_fanout;
+          else
+            join->sjm_lookup_tables &= ~handled_fanout;
           *current_read_time= read_time;
           *current_record_count= rec_count;
           join->cur_dups_producing_tables &= ~handled_fanout;
@@ -3066,6 +3076,13 @@ void restore_prev_sj_state(const table_map remaining_tables,
                                   const JOIN_TAB *tab, uint idx)
 {
   TABLE_LIST *emb_sj_nest;
+
+  if (tab->emb_sj_nest)
+  {
+    table_map subq_tables= tab->emb_sj_nest->sj_inner_tables;
+    tab->join->sjm_lookup_tables &= ~subq_tables;
+  }
+
   if ((emb_sj_nest= tab->emb_sj_nest))
   {
     /* If we're removing the last SJ-inner table, remove the sj-nest */
@@ -3243,6 +3260,7 @@ void fix_semijoin_strategies_for_picked_join_order(JOIN *join)
   uint tablenr;
   table_map remaining_tables= 0;
   table_map handled_tabs= 0;
+  join->sjm_lookup_tables= 0;
   for (tablenr= table_count - 1 ; tablenr != join->const_tables - 1; tablenr--)
   {
     POSITION *pos= join->best_positions + tablenr;
@@ -3268,6 +3286,7 @@ void fix_semijoin_strategies_for_picked_join_order(JOIN *join)
       first= tablenr - sjm->tables + 1;
       join->best_positions[first].n_sj_tables= sjm->tables;
       join->best_positions[first].sj_strategy= SJ_OPT_MATERIALIZE;
+      join->sjm_lookup_tables|= s->table->map;
     }
     else if (pos->sj_strategy == SJ_OPT_MATERIALIZE_SCAN)
     {
@@ -4088,7 +4107,7 @@ SJ_TMP_TABLE::create_sj_weedout_tmp_table(THD *thd)
   recinfo++;
   if (share->db_type() == TMP_ENGINE_HTON)
   {
-    if (create_internal_tmp_table(table, keyinfo, start_recinfo, &recinfo, 0, 0))
+    if (create_internal_tmp_table(table, keyinfo, start_recinfo, &recinfo, 0))
       goto err;
   }
   if (open_tmp_table(table))
@@ -4208,9 +4227,13 @@ int SJ_TMP_TABLE::sj_weedout_check_row(THD *thd)
     /* create_internal_tmp_table_from_heap will generate error if needed */
     if (!tmp_table->file->is_fatal_error(error, HA_CHECK_DUP))
       DBUG_RETURN(1); /* Duplicate */
+
+    bool is_duplicate;
     if (create_internal_tmp_table_from_heap(thd, tmp_table, start_recinfo,
-                                            &recinfo, error, 1))
+                                            &recinfo, error, 1, &is_duplicate))
       DBUG_RETURN(-1);
+    if (is_duplicate)
+      DBUG_RETURN(1);
   }
   DBUG_RETURN(0);
 }

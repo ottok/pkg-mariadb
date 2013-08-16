@@ -1,6 +1,6 @@
 /*****************************************************************************
 
-Copyright (c) 1995, 2012, Oracle and/or its affiliates. All Rights Reserved.
+Copyright (c) 1995, 2013, Oracle and/or its affiliates. All Rights Reserved.
 Copyright (c) 2008, 2009 Google Inc.
 Copyright (c) 2009, Percona Inc.
 
@@ -58,6 +58,8 @@ Created 10/8/1995 Heikki Tuuri
 *******************************************************/
 
 /* Dummy comment */
+#include "m_string.h" /* for my_sys.h */
+#include "my_sys.h" /* DEBUG_SYNC_C */
 #include "srv0srv.h"
 
 #include "ut0mem.h"
@@ -83,6 +85,7 @@ Created 10/8/1995 Heikki Tuuri
 #include "ha_prototypes.h"
 #include "trx0i_s.h"
 #include "os0sync.h" /* for HAVE_ATOMIC_BUILTINS */
+#include "read0read.h"
 #include "mysql/plugin.h"
 #include "mysql/service_thd_wait.h"
 
@@ -276,7 +279,7 @@ UNIV_INTERN ulint srv_data_read = 0;
 /* Internal setting for "innodb_stats_method". Decides how InnoDB treats
 NULL value when collecting statistics. By default, it is set to
 SRV_STATS_NULLS_EQUAL(0), ie. all NULL value are treated equal */
-ulong srv_innodb_stats_method = SRV_STATS_NULLS_EQUAL;
+UNIV_INTERN ulong srv_innodb_stats_method = SRV_STATS_NULLS_EQUAL;
 
 /* here we count the amount of data written in total (in bytes) */
 UNIV_INTERN ulint srv_data_written = 0;
@@ -356,6 +359,9 @@ UNIV_INTERN lint	srv_conc_n_threads	= 0;
 InnoDB */
 UNIV_INTERN ulint	srv_conc_n_waiting_threads = 0;
 
+/* print all user-level transactions deadlocks to mysqld stderr */
+UNIV_INTERN my_bool	srv_print_all_deadlocks = FALSE;
+
 typedef struct srv_conc_slot_struct	srv_conc_slot_t;
 struct srv_conc_slot_struct{
 	os_event_t			event;		/*!< event to wait */
@@ -395,6 +401,10 @@ this many index pages */
 UNIV_INTERN unsigned long long	srv_stats_sample_pages = 8;
 
 UNIV_INTERN ibool	srv_use_doublewrite_buf	= TRUE;
+UNIV_INTERN ibool	srv_use_atomic_writes = FALSE;
+#ifdef HAVE_POSIX_FALLOCATE
+UNIV_INTERN ibool	srv_use_posix_fallocate = TRUE;
+#endif
 UNIV_INTERN ibool	srv_use_checksums = TRUE;
 
 UNIV_INTERN ulong	srv_replication_delay		= 0;
@@ -1568,6 +1578,10 @@ srv_suspend_mysql_thread(
 
 	trx = thr_get_trx(thr);
 
+	if (trx->mysql_thd != 0) {
+		DEBUG_SYNC_C("srv_suspend_mysql_thread_enter");
+	}
+
 	os_event_set(srv_lock_timeout_thread_event);
 
 	mutex_enter(&kernel_mutex);
@@ -1705,7 +1719,8 @@ srv_suspend_mysql_thread(
 			finish_time = (ib_int64_t) sec * 1000000 + ms;
 		}
 
-		diff_time = (ulint) (finish_time - start_time);
+		diff_time = (finish_time > start_time) ?
+			    (ulint) (finish_time - start_time) : 0;
 
 		srv_n_lock_wait_current_count--;
 		srv_n_lock_wait_time = srv_n_lock_wait_time + diff_time;
@@ -2006,13 +2021,15 @@ void
 srv_export_innodb_status(void)
 /*==========================*/
 {
-	buf_pool_stat_t	stat;
-	ulint		LRU_len;
-	ulint		free_len;
-	ulint		flush_list_len;
+	buf_pool_stat_t		stat;
+	buf_pools_list_size_t	buf_pools_list_size;
+	ulint			LRU_len;
+	ulint			free_len;
+	ulint			flush_list_len;
 
 	buf_get_total_stat(&stat);
 	buf_get_total_list_len(&LRU_len, &free_len, &flush_list_len);
+	buf_get_total_list_size_in_bytes(&buf_pools_list_size);
 
 	mutex_enter(&srv_innodb_monitor_mutex);
 
@@ -2041,7 +2058,12 @@ srv_export_innodb_status(void)
 	export_vars.innodb_buffer_pool_read_ahead_evicted
 		= stat.n_ra_pages_evicted;
 	export_vars.innodb_buffer_pool_pages_data = LRU_len;
+	export_vars.innodb_buffer_pool_bytes_data =
+		buf_pools_list_size.LRU_bytes
+		+ buf_pools_list_size.unzip_LRU_bytes;
 	export_vars.innodb_buffer_pool_pages_dirty = flush_list_len;
+	export_vars.innodb_buffer_pool_bytes_dirty =
+		buf_pools_list_size.flush_list_bytes;
 	export_vars.innodb_buffer_pool_pages_free = free_len;
 #ifdef UNIV_DEBUG
 	export_vars.innodb_buffer_pool_pages_latched
@@ -2086,6 +2108,35 @@ srv_export_innodb_status(void)
 	export_vars.innodb_rows_updated = srv_n_rows_updated;
 	export_vars.innodb_rows_deleted = srv_n_rows_deleted;
 	export_vars.innodb_truncated_status_writes = srv_truncated_status_writes;
+
+#ifdef UNIV_DEBUG
+	{
+		trx_id_t	done_trx_no;
+		trx_id_t	up_limit_id;
+
+		rw_lock_s_lock(&purge_sys->latch);
+		done_trx_no	= purge_sys->done_trx_no;
+		up_limit_id	= purge_sys->view
+			? purge_sys->view->up_limit_id
+			: 0;
+		rw_lock_s_unlock(&purge_sys->latch);
+
+		if (trx_sys->max_trx_id < done_trx_no) {
+			export_vars.innodb_purge_trx_id_age = 0;
+		} else {
+			export_vars.innodb_purge_trx_id_age =
+				trx_sys->max_trx_id - done_trx_no;
+		}
+
+		if (!up_limit_id
+		    || trx_sys->max_trx_id < up_limit_id) {
+			export_vars.innodb_purge_view_trx_id_age = 0;
+		} else {
+			export_vars.innodb_purge_view_trx_id_age =
+				trx_sys->max_trx_id - up_limit_id;
+		}
+	}
+#endif /* UNIV_DEBUG */
 
 	mutex_exit(&srv_innodb_monitor_mutex);
 }
@@ -2772,6 +2823,26 @@ loop:
 
 	for (i = 0; i < 10; i++) {
 		ulint	cur_time = ut_time_ms();
+
+#ifdef UNIV_DEBUG
+		if (btr_cur_limit_optimistic_insert_debug
+		    && srv_n_purge_threads == 0) {
+			/* If btr_cur_limit_optimistic_insert_debug is enabled
+			and no purge_threads, purge opportunity is increased
+			by x100 (1purge/100msec), to speed up debug scripts
+			which should wait for purged. */
+			next_itr_time -= 900;
+
+			srv_main_thread_op_info = "master purging";
+
+			srv_master_do_purge();
+
+			if (srv_fast_shutdown && srv_shutdown_state > 0) {
+
+				goto background_loop;
+			}
+		}
+#endif /* UNIV_DEBUG */
 
 		/* ALTER TABLE in MySQL requires on Unix that the table handler
 		can drop tables lazily after there no longer are SELECT

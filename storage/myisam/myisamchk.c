@@ -11,7 +11,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA */
 
 /* Describe, check and repair of MyISAM tables */
 
@@ -284,25 +284,25 @@ static struct my_option my_long_options[] =
   { "read_buffer_size", OPT_READ_BUFFER_SIZE, "",
     &check_param.read_buffer_length,
     &check_param.read_buffer_length, 0, GET_ULONG, REQUIRED_ARG,
-    (long) READ_BUFFER_INIT, (long) MALLOC_OVERHEAD,
-    INT_MAX32, (long) MALLOC_OVERHEAD, (long) 1L, 0},
+    READ_BUFFER_INIT, MALLOC_OVERHEAD,
+    INT_MAX32, MALLOC_OVERHEAD, 1L, 0},
   { "write_buffer_size", OPT_WRITE_BUFFER_SIZE, "",
     &check_param.write_buffer_length,
     &check_param.write_buffer_length, 0, GET_ULONG, REQUIRED_ARG,
-    (long) READ_BUFFER_INIT, (long) MALLOC_OVERHEAD,
-    INT_MAX32, (long) MALLOC_OVERHEAD, (long) 1L, 0},
+    READ_BUFFER_INIT, MALLOC_OVERHEAD,
+    INT_MAX32, MALLOC_OVERHEAD, 1L, 0},
   { "sort_buffer_size", OPT_SORT_BUFFER_SIZE,
     "Deprecated. myisam_sort_buffer_size alias is being used",
     &check_param.sort_buffer_length,
     &check_param.sort_buffer_length, 0, GET_ULL, REQUIRED_ARG,
-    (long) SORT_BUFFER_INIT, (long) (MIN_SORT_BUFFER + MALLOC_OVERHEAD),
-    SIZE_T_MAX, (long) MALLOC_OVERHEAD, (long) 1L, 0},
+    SORT_BUFFER_INIT, MIN_SORT_BUFFER + MALLOC_OVERHEAD,
+    SIZE_T_MAX, MALLOC_OVERHEAD, 1L, 0},
   { "myisam_sort_buffer_size", OPT_SORT_BUFFER_SIZE, 
     "Alias of sort_buffer_size parameter",
     &check_param.sort_buffer_length,
     &check_param.sort_buffer_length, 0, GET_ULL, REQUIRED_ARG,
-    (long) SORT_BUFFER_INIT, (long) (MIN_SORT_BUFFER + MALLOC_OVERHEAD),
-    SIZE_T_MAX, (long) MALLOC_OVERHEAD, (long) 1L, 0},
+    SORT_BUFFER_INIT, MIN_SORT_BUFFER + MALLOC_OVERHEAD,
+    SIZE_T_MAX, MALLOC_OVERHEAD, 1L, 0},
   { "sort_key_blocks", OPT_SORT_KEY_BLOCKS, "",
     &check_param.sort_key_blocks,
     &check_param.sort_key_blocks, 0, GET_ULONG, REQUIRED_ARG,

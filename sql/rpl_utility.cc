@@ -878,8 +878,13 @@ TABLE *table_def::create_conversion_table(THD *thd, Relay_log_info *rli, TABLE *
   DBUG_ENTER("table_def::create_conversion_table");
 
   List<Create_field> field_list;
-
-  for (uint col= 0 ; col < size() ; ++col)
+  /*
+    At slave, columns may differ. So we should create
+    min(columns@master, columns@slave) columns in the
+    conversion table.
+  */
+  uint const cols_to_create= min(target_table->s->fields, size());
+  for (uint col= 0 ; col < cols_to_create; ++col)
   {
     Create_field *field_def=
       (Create_field*) alloc_root(thd->mem_root, sizeof(Create_field));
@@ -1167,6 +1172,7 @@ void Deferred_log_events::rewind()
       Log_event *ev= *(Log_event **) dynamic_array_ptr(&array, i);
       delete ev;
     }
+    last_added= NULL;
     if (array.elements > array.max_element)
       freeze_size(&array);
     reset_dynamic(&array);

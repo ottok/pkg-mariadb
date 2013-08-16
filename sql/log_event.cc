@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2000, 2012, Oracle and/or its affiliates.
+   Copyright (c) 2000, 2013, Oracle and/or its affiliates.
    Copyright (c) 2009, 2013, Monty Program Ab.
 
    This program is free software; you can redistribute it and/or modify
@@ -622,16 +622,18 @@ static inline int read_str(const char **buf, const char *buf_end,
 
 
 /**
-  Transforms a string into "" or its expression in 0x... form.
+  Transforms a string into "" or its expression in X'HHHH' form.
 */
 
 char *str_to_hex(char *to, const char *from, uint len)
 {
   if (len)
   {
-    *to++= '0';
-    *to++= 'x';
+    *to++= 'X';
+    *to++= '\'';
     to= octet2hex(to, from, len);
+    *to++= '\'';
+    *to= '\0';
   }
   else
     to= strmov(to, "\"\"");
@@ -652,7 +654,7 @@ append_query_string(THD *thd, CHARSET_INFO *csinfo,
 {
   char *beg, *ptr;
   uint32 const orig_len= to->length();
-  if (to->reserve(orig_len + from->length()*2+3))
+  if (to->reserve(orig_len + from->length() * 2 + 4))
     return 1;
 
   beg= (char*) to->ptr() + to->length();
@@ -1214,7 +1216,9 @@ bool Log_event::write_header(IO_CACHE* file, ulong event_data_length)
 
 int Log_event::read_log_event(IO_CACHE* file, String* packet,
                               mysql_mutex_t* log_lock,
-                              uint8 checksum_alg_arg)
+                              uint8 checksum_alg_arg,
+                              const char *log_file_name_arg,
+                              bool* is_binlog_active)
 {
   ulong data_len;
   int result=0;
@@ -1224,6 +1228,10 @@ int Log_event::read_log_event(IO_CACHE* file, String* packet,
 
   if (log_lock)
     mysql_mutex_lock(log_lock);
+
+  if (log_file_name_arg)
+    *is_binlog_active= mysql_bin_log.is_active(log_file_name_arg);
+
   if (my_b_read(file, (uchar*) buf, sizeof(buf)))
   {
     /*
@@ -1369,7 +1377,7 @@ failed my_b_read"));
   Log_event *res=  0;
 #ifndef max_allowed_packet
   THD *thd=current_thd;
-  uint max_allowed_packet= thd ? slave_max_allowed_packet:~(ulong)0;
+  uint max_allowed_packet= thd ? slave_max_allowed_packet:~(uint)0;
 #endif
 
   if (data_len > max_allowed_packet)
@@ -1804,6 +1812,7 @@ void Log_event::print_header(IO_CACHE* file,
 /**
   Prints a quoted string to io cache.
   Control characters are displayed as hex sequence, e.g. \x00
+  Single-quote and backslash characters are escaped with a \
   
   @param[in] file              IO cache
   @param[in] prt               Pointer to string
@@ -1819,6 +1828,10 @@ my_b_write_quoted(IO_CACHE *file, const uchar *ptr, uint length)
   {
     if (*s > 0x1F)
       my_b_write(file, s, 1);
+    else if (*s == '\'')
+      my_b_write(file, "\\'", 2);
+    else if (*s == '\\')
+      my_b_write(file, "\\\\", 2);
     else
     {
       uchar hex[10];
@@ -4713,10 +4726,21 @@ do_server_version_split(char* version,
   for (uint i= 0; i<=2; i++)
   {
     number= strtoul(p, &r, 10);
-    split_versions->ver[i]= (uchar) number;
-    DBUG_ASSERT(number < 256); // fit in uchar
+    /*
+      It is an invalid version if any version number greater than 255 or
+      first number is not followed by '.'.
+    */
+    if (number < 256 && (*r == '.' || i != 0))
+      split_versions->ver[i]= (uchar) number;
+    else
+    {
+      split_versions->ver[0]= 0;
+      split_versions->ver[1]= 0;
+      split_versions->ver[2]= 0;
+      break;
+    }
+
     p= r;
-    DBUG_ASSERT(!((i == 0) && (*r != '.'))); // should be true in practice
     if (*r == '.')
       p++; // skip the dot
   }
@@ -4734,7 +4758,6 @@ do_server_version_split(char* version,
    into 'server_version_split':
    X.Y.Zabc (X,Y,Z numbers, a not a digit) -> {X,Y,Z}
    X.Yabc -> {X,Y,0}
-   Xabc -> {X,0,0}
    'server_version_split' is then used for lookups to find if the server which
    created this event has some known bug.
 */
@@ -6274,7 +6297,7 @@ void User_var_log_event::pack_info(THD *thd, Protocol* protocol)
             buf.append(" "))
           return;
         old_len= buf.length();
-        if (buf.reserve(old_len + val_len*2 + 2 + sizeof(" COLLATE ") +
+        if (buf.reserve(old_len + val_len * 2 + 3 + sizeof(" COLLATE ") +
                         MY_CS_NAME_SIZE))
           return;
         beg= const_cast<char *>(buf.ptr()) + old_len;
@@ -6302,7 +6325,7 @@ User_var_log_event(const char* buf, uint event_len,
                    const Format_description_log_event* description_event)
   :Log_event(buf, description_event)
 #ifndef MYSQL_CLIENT
-  , deferred(false)
+  , deferred(false), query_id(0)
 #endif
 {
   bool error= false;
@@ -6317,10 +6340,9 @@ User_var_log_event(const char* buf, uint event_len,
   /*
     We don't know yet is_null value, so we must assume that name_len
     may have the bigger value possible, is_null= True and there is no
-    payload for val.
+    payload for val, or even that name_len is 0.
   */
-  if (0 == name_len ||
-      !valid_buffer_range<uint>(name_len, buf_start, name,
+  if (!valid_buffer_range<uint>(name_len, buf_start, name,
                                 event_len - UV_VAL_IS_NULL))
   {
     error= true;
@@ -6543,7 +6565,8 @@ void User_var_log_event::print(FILE* file, PRINT_EVENT_INFO* print_event_info)
       char *hex_str;
       CHARSET_INFO *cs;
 
-      hex_str= (char *)my_malloc(2*val_len+1+2,MYF(MY_WME)); // 2 hex digits / byte
+      // 2 hex digits / byte
+      hex_str= (char *) my_malloc(2 * val_len + 1 + 3, MYF(MY_WME));
       if (!hex_str)
         return;
       str_to_hex(hex_str, val, val_len);
@@ -6586,11 +6609,17 @@ int User_var_log_event::do_apply_event(Relay_log_info const *rli)
   Item *it= 0;
   CHARSET_INFO *charset;
   DBUG_ENTER("User_var_log_event::do_apply_event");
+  query_id_t sav_query_id= 0; /* memorize orig id when deferred applying */
 
   if (rli->deferred_events_collecting)
   {
-    set_deferred();
+    set_deferred(current_thd->query_id);
     DBUG_RETURN(rli->deferred_events->add(this));
+  }
+  else if (is_deferred())
+  {
+    sav_query_id= current_thd->query_id;
+    current_thd->query_id= query_id; /* recreating original time context */
   }
 
   if (!(charset= get_charset(charset_number, MYF(MY_WME))))
@@ -6665,6 +6694,8 @@ int User_var_log_event::do_apply_event(Relay_log_info const *rli)
                  (flags & User_var_log_event::UNSIGNED_F));
   if (!is_deferred())
     free_root(thd->mem_root, 0);
+  else
+    current_thd->query_id= sav_query_id; /* restore current query's context */
 
   DBUG_RETURN(0);
 }
@@ -7343,7 +7374,7 @@ int Append_block_log_event::do_apply_event(Relay_log_info const *rli)
 
   DBUG_EXECUTE_IF("remove_slave_load_file_before_write",
                   {
-                    my_delete_allow_opened(fname, MYF(0));
+                    my_delete(fname, MYF(0));
                   });
 
   if (mysql_file_write(fd, (uchar*) block, block_len, MYF(MY_WME+MY_NABP)))
@@ -9472,6 +9503,7 @@ int Table_map_log_event::do_apply_event(Relay_log_info const *rli)
 
   table_list->table_id= DBUG_EVALUATE_IF("inject_tblmap_same_id_maps_diff_table", 0, m_table_id);
   table_list->updating= 1;
+  table_list->required_type= FRMTYPE_TABLE;
   DBUG_PRINT("debug", ("table: %s is mapped to %u", table_list->table_name, table_list->table_id));
   enum_tbl_map_status tblmap_status= check_table_map(rli, table_list);
   if (tblmap_status == OK_TO_PROCESS)
@@ -10087,6 +10119,8 @@ Write_rows_log_event::do_exec_row(const Relay_log_info *const rli)
 #ifdef MYSQL_CLIENT
 void Write_rows_log_event::print(FILE *file, PRINT_EVENT_INFO* print_event_info)
 {
+  DBUG_EXECUTE_IF("simulate_cache_read_error",
+                  {DBUG_SET("+d,simulate_my_b_fill_error");});
   Rows_log_event::print_helper(file, print_event_info, "Write_rows");
 }
 #endif
