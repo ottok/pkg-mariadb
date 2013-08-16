@@ -1,0 +1,179 @@
+Rules:
+ rules:
+  -
+   Glob: extra/yassl*COPYING
+   Contains: Everyone is permitted to copy and distribute verbatim copies
+   CopyrightExtract: &extract Copyright\s+\([Cc]\)\s(\Y+[\w\s,]+)\.
+   License: GPL-verbatim
+  -
+   Glob: storage/innobase/COPYING.*
+   CopyrightExtract: *extract
+  -
+   Glob: scripts/mysqlaccess.conf
+   MaxVersion: 5.6
+   License: GPL-2
+   Copyright: 1997 Yves.Carlier@rug.ac.be
+  -
+   Glob: mysys/sha1.c
+   MaxVersion: 5.6
+   Copyright:
+    - 2002, 2004, 2006 MySQL AB
+    - 2001 The Internet Society
+  -
+   Glob: regex/regexp.c
+   MaxVersion: 5.6
+   CopyrightExtract: *extract
+   VerifyLicense: UNKNOWN
+   License: BSD-like
+  -
+   Glob: libmysqld/lib_sql.cc
+   MaxVersion: 5.6
+   CopyrightExtract: \s*\*\s*Copyright\s*\(c\)\s+(\Y+\s*\*\s+SWsoft\s+company)
+   License: SWsoft
+  -
+   Glob: debian/additions/mysqlreport*
+   MaxVersion: 5.6
+   Copyright: Daniel Nichter <public@codenode.com>
+  -
+   Glob: include/mysql_version.h.in
+   MaxVersion: 5.6
+   Copyright: 1996, 1999, 2001 MySQL AB
+   License: public-domain
+  -
+   Glob: cmd-line-utils/readline/COPYING extra/yassl/taocrypt/COPYING
+   Copyright: 1989, 1991 Free Software Foundation, Inc.
+  -
+   Glob: s*.h
+   VerifyLicense: BSD (3 clause) GPL (v2)
+   License: BSD-3-clause or GPL-2
+  -
+   Glob: cmd-line-utils/readline* sql/* s*.sh
+   VerifyLicense: GPL (v2 or later)
+   License: GPL-2+
+   CopyrightExtract: &CE (?:(?:Copyright\s+\(C\)\s+(\Y+Google\s+Inc)\.\s*\R+)|(?:Copyright\s+\([Cc]\)\s+(\Y+(?:\s*\R\Y+)?\s*Free\s+Software\s+Foundation,\s+Inc)\.\s*\R+)|(?:Copyright\s+\(c\)\s+(\Y+Oracle\s+and/or\s+its\s+affiliates)\.\s+All\s+rights\s+reserved\.\s+\&\s+(tommy\@valley\.ne\.jp)\.\s*\R+)|(?:Copyright\s+\(c\)\s+(\Y+Sun\s+Microsystems,\s+Inc)\.\s*\R+)|(?:Copyright\s+\(c\)\s+(\Y+Innobase\s+Oy)\.\s+All\s+Rights\s+Reserved\.\s+\R+)|(?:/\*\ Copyright\ \(C\)\ (\Y+MySQL\ AB)\s*\R+)|(?:/\*\ Copyright\ \(C\)\ (\Y+MySQL\ AB)\ \&\ ([\w\ ]+)\s*\R+)|(?:(?:/\*|\#)?\s*Copyright\s+(?:\(c\)\s+)?(\Y+MySQL\s+AB),\s+(\Y+Sun\s+Microsystems,\s+Inc)\.\s*\R+)|(?:Copyright\s+\(c\)\s+(\Y+Oracle\s+and/or\s+its\s+affiliates)\.\s+All\s+rights\s+reserved\.\s*\R+)|(?:\s*This\s+program\s+is\s+free\s+software[\w\s;/\.,-]{620,680}\*/\s*/\*\s+Written\s+by\s+([\s\w\.]+),\s+who\s+has\s+a\s+shared\s+copyright\s+to\s+this\s+code))+
+  -
+   Glob: scripts/*.pl
+   VerifyLicense: BSD (3 clause)
+   License: BSD-3-clause
+   CopyrightExtract: *CE
+  -
+   Glob: cmd-line-utils/*
+   MMagic: text/plain
+   VerifyLicense: BSD
+   Matches: \s*[\#\*]\s+Copyright\s+\(c\)\s+(?:1989,\s+)?(?:1990,\s+)?(?:1992,\s+)?1993\s+[\#\*]\s+The\s+Regents\s+of\s+the\s+University\s+of\s+California
+   Copyright: 1989-1990, 1992-1993, The Regents of the University of California
+  -
+   Glob: zlib* storage/archive/azlib.h
+   MMagic: text/plain
+   CopyrightExtract: (?:(?:\s+Copyright\s+\(C\)\s+(\Y+Jean-loup\s+Gailly)\s+and\s+(Mark\s+Adler)\s*\R+)|(?:\s+\*\s+Copyright\s+\(C\)\s+(\Y+Jean-loup\s+Gailly)\.\s*\R+)|(?:\s+\*\s+Copyright\s+\(C\)\s+(\Y+Mark\s+Adler)\s*\R+))+
+  -
+   Glob: sql/* storage/* mysys/*
+   MMagic: text/plain
+   VerifyLicense: Public domain GPL (v2)
+   License: GPL-2
+   CopyrightExtract: *CE
+  -
+   Glob: s* plugin/* mysql-test/*.p[lm] tests/* mysys/* unittest/* include/* extra/* dbug/*.pl cmd-line-utils/readline*
+   VerifyLicense: GPL (v2)
+   CopyrightExtract: *CE
+  -
+   Glob: extra/*
+   MMagic: text/plain
+   VerifyLicense: UNKNOWN
+   CopyrightExtract: *CE
+   Matches: \s+This\s+file\s+is\s+free\s+documentation;\s+the\s+Free\s+Software\s+Foundation\s+gives\s+unlimited\s+permission\s+to\s+copy,\s+distribute\s+and\s+modify\s+it.
+   License: unlimited-free-doc
+  -
+   Glob: storage/ndb/src/common/util/md5_hash.cpp
+   MaxVersion: 5.6
+   MMagic: text/plain
+   Contains: |
+    /*
+     * This code implements the MD5 message-digest algorithm.
+     * The algorithm is due to Ron Rivest.  This code was
+     * written by Colin Plumb in 1993, no copyright is claimed.
+     * This code is in the public domain; do with it what you wish.
+     *
+     * Equivalent code is available from RSA Data Security, Inc.
+     * This code has been tested against that, and is equivalent,
+     * except that you don't need to include two pages of legalese
+     * with every copy.
+     *
+     * The code has been modified by Mikael Ronstroem to handle
+     * calculating a hash value of a key that is always a multiple
+     * of 4 bytes long. Word 0 of the calculated 4-word hash value
+     * is returned as the hash value.
+     */
+   Matches: the\s+Free\s+Software\s+Foundation;\s+version\s+2\s+of\s+the\s+License.
+   License: GPL-2
+   Copyright: Copyright (C) 2003 MySQL AB
+   Justification: Seems to have been taken out of public domain by Oracle.
+  -
+   Glob: mysys/md5.c
+   MaxVersion: 5.6
+   MMagic: text/plain
+   Contains: |
+    /* Copyright (C) 2000 MySQL AB
+    
+       This program is free software; you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation; version 2 of the License.
+    
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+    
+       You should have received a copy of the GNU General Public License
+       along with this program; if not, write to the Free Software
+       Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+    
+    /*
+     * This code implements the MD5 message-digest algorithm.
+     * The algorithm is due to Ron Rivest.  This code was
+     * written by Colin Plumb in 1993, no copyright is claimed.
+     * This code is in the public domain; do with it what you wish.
+     *
+     * Equivalent code is available from RSA Data Security, Inc.
+     * This code has been tested against that, and is equivalent,
+     * except that you don't need to include two pages of legalese
+     * with every copy.
+     *
+     * To compute the message digest of a chunk of bytes, declare an
+     * MD5Context structure, pass it to MD5Init, call MD5Update as
+     * needed on buffers full of bytes, and then call MD5Final, which
+     * will fill a supplied 16-byte array with the digest.
+     */
+    
+    /* This code was modified in 1997 by Jim Kingdon of Cyclic Software to
+       not require an integer type which is exactly 32 bits.  This work
+       draws on the changes for the same purpose by Tatu Ylonen
+       <ylo@cs.hut.fi> as part of SSH, but since I didn't actually use
+       that code, there is no copyright issue.  I hereby disclaim
+       copyright in any changes I have made; this code remains in the
+       public domain.  */
+   License: GPL-2
+   Copyright: Copyright (C) 2000 MySQL AB
+   Justification: Seems to have been taken out of public domain by Oracle.
+  -
+   Glob: storage/ndb/test/include/getarg.h
+   MaxVersion: 5.5.30
+   Copyright: |
+    2003 MySQL AB
+    1997-1999 Kungliga Tekniska Högskolan
+   License: BSD (3 clause) or GPL-2
+   Justification: Check the actual file but this looks like a dual-license to me
+  -
+   Glob: dbug/*
+   Matches: Copyright\s+Abandoned,\s+1987,\s+Fred\s+Fish\s+\*\s+\*\s+\*\s+\*\s+\*\s+\*\s+This\s+previously\s+copyrighted\s+work\s+has\s+been\s+placed\s+into\s+the\s+public\s+\*\s+\*\s+domain\s+by\s+the\s+author\s+and\s+may\s+be\s+freely\s+used\s+for\s+any\s+purpose,\s+\*\s+\*\s+private\s+or\s+commercial\.
+   Copyright: 1987 Abandoned Fred Fish
+   License: public-domain
+Std:
+ChangeLog:
+ license: GPL-2+
+Default:
+ rules:
+  -
+   Copyright: 2000, 2012, Oracle and/or its affiliates. All rights reserved.
+   License: GPL-2
+   Justification: This is taken from the README file.
