@@ -3,7 +3,6 @@ Upstream-Name: MariaDB 5.5
 Upstream-Contact: https://mariadb.atlassian.net/browse/MDEV
 Source: https://code.launchpad.net/~maria-captains/maria/5.5
 Comment:
- 
  The file Docs/mysql.info is removed from the upstream source
  because it is incompatible with the Debian Free Software Guidelines.
  See debian/README.source for how this repacking was done.

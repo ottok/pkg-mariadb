@@ -3,7 +3,7 @@
 #DEBHELPER#
 
 case "$1" in
-  configure)
+  remove)
     ldconfig
 esac
 
