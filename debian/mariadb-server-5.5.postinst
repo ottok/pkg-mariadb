@@ -4,7 +4,7 @@
 
 if [ -n "$DEBIAN_SCRIPT_DEBUG" ]; then set -v -x; DEBIAN_SCRIPT_TRACE=1; fi
 ${DEBIAN_SCRIPT_TRACE:+ echo "#42#DEBUG# RUNNING $0 $*" 1>&2 }
- 
+
 export PATH=$PATH:/sbin:/usr/sbin:/bin:/usr/bin
 
 # This command can be used as pipe to syslog. With "-s" it also logs to stderr.
@@ -61,7 +61,7 @@ EOF
 # In case the server wasn't running at all it should be ok if the stop
 # script fails. I can't tell at this point because of the cleaned /var/run.
 set +e; invoke stop; set -e
-    
+
 case "$1" in
   configure)
     mysql_datadir=/usr/share/mysql
@@ -107,7 +107,7 @@ EOF
         fi
 	rmdir $mysql_upgradedir 2>/dev/null || true
     done
-    
+
     # Ensure the existence and right permissions for the database and
     # log files.
     if [ ! -d "$mysql_statedir"       -a ! -L "$mysql_statedir"       ]; then mkdir "$mysql_statedir"; fi

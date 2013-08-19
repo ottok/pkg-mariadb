@@ -58,7 +58,6 @@ Description: MariaDB database development files
  This package includes development libraries and header files.
 
 Package: mariadb-common
-Section: database
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Provides: mysql-common
@@ -146,7 +145,6 @@ Description: MariaDB database core server files
  This package includes the core server files, as used by Akonadi.
 
 Package: mariadb-test-5.5
-Section: database
 Architecture: any
 Depends: mariadb-server-5.5 (>= ${source:Version}), mariadb-client-5.5 (>= ${source:Version}), ${misc:Depends}, ${shlibs:Depends}
 Conflicts: mariadb-test (<< ${source:Version}),
@@ -185,7 +183,6 @@ Description: MariaDB database server binaries
  This package includes the server binaries.
 
 Package: mariadb-server
-Section: database
 Architecture: all
 Depends: mariadb-server-5.5 (>= ${source:Version}), ${misc:Depends}
 Description: MariaDB database server (metapackage depending on the latest version)
@@ -201,17 +198,15 @@ Description: MariaDB database server (metapackage depending on the latest versio
  ease of use.
 
 Package: mariadb-client
-Section: database
 Architecture: all
 Depends: mariadb-client-5.5 (>= ${source:Version}), ${misc:Depends}
 Description: MariaDB database client (metapackage depending on the latest version)
  This is an empty package that depends on the current "best" version of
  mariadb-client (currently mariadb-client-5.5), as determined by the MariaDB
  maintainers.  Install this package if in doubt about which MariaDB version
- you want, as this is the one we consider to be in the best shape.
+ you want, as this is the one considered to be in the best shape.
 
 Package: mariadb-test
-Section: database
 Architecture: all
 Depends: mariadb-test-5.5 (>= ${source:Version}), ${misc:Depends}
 Description: MariaDB database regression test suite (metapackage for the latest version)
