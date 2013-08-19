@@ -9,7 +9,7 @@ Comment:
  See debian/README.source for how this repacking was done.
  .
  Originally produced by a modified version of licensecheck2dep5
- from CDBS by Clint Byrum <clint@ubuntu.com>. Hand modified to reduce 
+ from CDBS by Clint Byrum <clint@ubuntu.com>. Hand modified to reduce
  redundancy in the output and add appropriate license text. The file
  has been rechecked against the source using the development version
  of license-reconcile, see #686485.
@@ -68,7 +68,7 @@ Comment:
  > .
  > "Program" means a copy of Oracle's MySQL Client Libraries that
  > contains a FOSS Notice.
- > . 
+ > .
  > A FOSS application developer ("you" or "your") may distribute a
  > Derivative Work provided that you and the Derivative Work meet all
  > of the following conditions: You obey the GPL in all respects for
@@ -90,7 +90,7 @@ Comment:
  > does not apply to you or your Derivative Work.
  > .
  > FOSS License List
- > . 
+ > .
  > License Name    Version(s)/Copyright Date
  > Release Early    Certified Software
  > Academic Free License    2.0
@@ -128,11 +128,13 @@ Comment:
  © 2010, Oracle and/or its affiliates.
 
 Files: *
-Copyright: 2000, 2012, Oracle and/or its affiliates. All rights reserved.
+Copyright:
+ 2000, 2012, Oracle and/or its affiliates. All rights reserved.
+ 2008-2013 Monty Program Ab
 License: GPL-2
 
 Files: debian/*
-Copyright: 
+Copyright:
  1997-1998, Scott Hanson <shanson@debian.org>
  1997, Christian Schwarz <schwarz@debian.org>
  1999-2007, 2009, Christian Hammers <ch@debian.org>
@@ -148,14 +150,20 @@ Copyright:
  2011, Clint Byrum <clint@ubuntu.com>
  2011, Ondřej Surý <ondrej@debian.org>
  2012, Nicholas Bamber <nicholas@periapt.co.uk>
+ 2013, Kristian Nielsen <knielsen@askmonty.org>
  2013, Otto Kekäläinen <otto@seravo.fi>
+License: GPL-2+
+
+Files: debian/*
+Copyright:
+ 2009, Canonical Ltd
 License: GPL-2+
 
 Files: debian/additions/mysqlreport*
 Copyright: 2006-2008, Daniel Nichter <public@codenode.com>
 License: GPL-2+
 
-Files: 
+Files:
  dbug/example1.c
  dbug/example2.c
  dbug/example3.c
@@ -187,11 +195,11 @@ Comment: These files fall under the blanket license specified in the file
 License: GPL-2
  GPLv2 Disclaimer
  For the avoidance of doubt, except that if any license choice
- other than GPL or LGPL is available it will apply instead, 
- Oracle elects to use only the General Public License version 2 
- (GPLv2) at this time for any software where a choice of GPL 
- license versions is made available with the language indicating 
- that GPLv2 or any later version may be used, or where a choice 
+ other than GPL or LGPL is available it will apply instead,
+ Oracle elects to use only the General Public License version 2
+ (GPLv2) at this time for any software where a choice of GPL
+ license versions is made available with the language indicating
+ that GPLv2 or any later version may be used, or where a choice
  of which version of the GPL is applied is otherwise unspecified.
 
 Files: BUILD/*
@@ -276,7 +284,9 @@ Files: BUILD/*
  vio/*
 Copyright: 1979-2008 MySQL AB
            1995-2010 Sun Microsystems Inc
-           1994-1997,2000-2012 Oracle and/or its affiliates.
+           1994-1997,2000-2012 Oracle and/or its affiliates
+           2010 Kristian Nielsen and Monty Program AB
+           2008-2011 Monty Program AB
 License: GPL-2
 
 Files: extra/*/INSTALL
@@ -311,12 +321,38 @@ License: GPL-2
 
 Files: storage/innobase/*
 Copyright:
- 1994-2011 Innobase Oy
- 1996, 2010, 2011, Oracle Corpn
+ 1994-2011 Sergei A. Golubchik
+ 1996 Michael Widenius
  1994-2012 Oracle and/or its affiliates
  2008-2009 Google Inc
  2009, Sun Microsystems, Inc
  2009 Percona Inc
+License: GPL-2
+
+Files: storage/maria/*
+Copyright:
+ 2008-2009 Sun Microsystems, Inc
+ 2006 MySQL Finland AB
+ 2006 TCX DataKonsult AB
+ 2003-2008 MySQL AB
+ 2007-2008 Michael Widenius
+ 2007 Guilhem Bichot
+ 2006 Sergei A. Golubchik
+ 2007 Sanja Belkin
+ 2006 Ramil Kalimullin
+ 2006 Alexey Botchkov
+ 2008-2011 Monty Program Ab
+License: GPL-2
+
+Files: storage/pbxt/*
+Copyright: 2005-2007 PrimeBase Technologies GmbH
+License: GPL-2
+
+Files: storage/xtradb/*
+Copyright:
+  1994-2013 Oracle and/or its affiliates
+  1994-2013 Innobase Oy
+  2008 Google Inc
 License: GPL-2
 
 Files: storage/innobase/COPYING.Google
@@ -345,7 +381,7 @@ License:
  This material is provided "as is", with absolutely no warranty expressed
  or implied. Any use is at your own risk.
  .
- Permission to use or copy this software for any purpose is hereby granted 
+ Permission to use or copy this software for any purpose is hereby granted
  without fee. Permission to modify the code and to distribute modified
  code is also granted without any restrictions.
 
@@ -552,29 +588,29 @@ Files: dbug/dbug.c
  dbug/dbug_long.h
 Copyright: 1987 Abandoned Fred Fish
 License: public-domain
- N O T I C E				      
+ N O T I C E
  .
- Copyright Abandoned, 1987, Fred Fish		      
+ Copyright Abandoned, 1987, Fred Fish
  .
  .
- This previously copyrighted work has been placed into the  public     
- domain	by  the  author  and  may be freely used for any purpose,     
- private or commercial.						      
+ This previously copyrighted work has been placed into the  public
+ domain	by  the  author  and  may be freely used for any purpose
+ private or commercial.
  .
- Because of the number of inquiries I was receiving about the  use     
- of this product in commercially developed works I have decided to     
- simply make it public domain to further its unrestricted use.	I     
- specifically  would  be  most happy to see this material become a     
- part of the standard Unix distributions by AT&T and the  Berkeley     
- Computer  Science  Research Group, and a standard part of the GNU     
- system from the Free Software Foundation.			      
+ Because of the number of inquiries I was receiving about the  use
+ of this product in commercially developed works I have decided to
+ simply make it public domain to further its unrestricted use.	I
+ specifically  would  be  most happy to see this material become a
+ part of the standard Unix distributions by AT&T and the  Berkeley
+ Computer  Science  Research Group, and a standard part of the GNU
+ system from the Free Software Foundation.
  .
- I would appreciate it, as a courtesy, if this notice is  left  in     
- all copies and derivative works.  Thank you.			      
+ I would appreciate it, as a courtesy, if this notice is  left  in
+ all copies and derivative works.  Thank you.
  .
- The author makes no warranty of any kind  with	respect  to  this     
- product  and  explicitly disclaims any implied warranties of mer-     
- chantability or fitness for any particular purpose.		      
+ The author makes no warranty of any kind  with	respect  to  this
+ product  and  explicitly disclaims any implied warranties of mer-
+ chantability or fitness for any particular purpose.
 
 Files: cmd-line-utils/libedit/np/vis.c
 Copyright: 1989-1993 The Regents of the University of California.
@@ -616,6 +652,11 @@ Files: storage/ndb/test/include/getarg.h
 Copyright: 2003 MySQL AB
  1997-1999 Kungliga Tekniska Högskolan
 License: BSD-3-clause or GPL-2
+
+Files: plugin/handler_socket/*
+Copyright:
+ 2010 DeNA Co.,Ltd.
+License: BSD-3-clause
 
 Files: plugin/semisync/*
 Copyright:
@@ -670,7 +711,7 @@ License: SWsoft
  This material is provided "as is", with absolutely no warranty expressed
  or implied. Any use is at your own risk.
  .
- Permission to use or copy this software for any purpose is hereby granted 
+ Permission to use or copy this software for any purpose is hereby granted
  without fee, provided the above notices are retained on all copies.
  Permission to modify the code and to distribute modified code is granted,
  provided the above notices are retained, and a notice that the code was
@@ -714,7 +755,7 @@ Files: scripts/mysqlaccess.conf
 Copyright: 1997, Yves.Carlier@rug.ac.be
 License: GPL-2
 
-Files: debian/innotop/*
+Files: debian/additions/innotop/*
 Copyright: 2006-2009, Baron Schwartz <baron@xaprb.com>
 License: GPL-2 or Artistic
 
