@@ -716,7 +716,7 @@ License: GPL-2
 
 Files: debian/innotop/*
 Copyright: 2006-2009, Baron Schwartz <baron@xaprb.com>
-License: GPL-2 or Artistic License
+License: GPL-2 or Artistic
 
 Files: include/mysql_version.h.in
 Copyright: 1996, 1999, 2001 MySQL AB

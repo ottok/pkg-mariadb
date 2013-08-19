@@ -1,3 +1,11 @@
+mariadb-5.5 (5.5.33-1.1) unstable; urgency=low
+
+  * Non-maintainer upload
+  * Synced with upstream 5.5.33
+  * Fine tuned packaging based on MySQL maint team feedback
+
+ -- Otto Kekäläinen <otto@seravo.fi>  Mon, 19 Aug 2013 08:51:22 +0300
+
 mariadb-5.5 (5.5.32-1.1) unstable; urgency=low
 
   * Non-maintainer upload
