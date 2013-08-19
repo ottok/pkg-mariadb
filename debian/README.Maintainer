@@ -1,6 +1,5 @@
 NOTE: This file is likely to be depricated, hasn't been updated for along time!!
 
-
 Tip:
 # Don't run the mysql-test-run test suite as part of build.
 # It takes a lot of time, and we will do a better test anyway in
@@ -19,14 +18,13 @@ export DEB_BUILD_OPTIONS="nocheck"
 # following Debian maintainers of MySQL.                                  #
 ###########################################################################
 
-The debian/ directory is under SVN control, see debian/control for URL.
 
 #
 # Preparing a new version
 #
 The new orig.tar.gz (without non-free documentation) is created in /tmp/ when
 running this command:
- 
+
 debian/rules get-orig-source
 
 #
