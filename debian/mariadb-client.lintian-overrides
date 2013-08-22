@@ -1,8 +1,3 @@
-mariadb-client: embedded-library usr/bin/mysqladmin: libmysqlclient
-mariadb-client: embedded-library usr/bin/mysqldump: libmysqlclient
-mariadb-client: embedded-library usr/bin/mysqlimport: libmysqlclient
-mariadb-client: embedded-library usr/bin/mysqlshow: libmysqlclient
-mariadb-client: embedded-library usr/bin/mysqlslap: libmysqlclient
 # OK in neẃer Debian, includes support for xz
 mariadb-client: data.tar.xz-member-without-dpkg-pre-depends
 

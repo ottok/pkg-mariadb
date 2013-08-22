@@ -1,29 +1,19 @@
-mariadb-5.5 (5.5.32-1.2) UNRELEASED; urgency=low
+mariadb-5.5 (5.5.32-1.1) experimental; urgency=low
 
-  * Non-maintainer upload
-  * Fixing build-deps
   * Closes: #565308
-
- -- Otto Kekäläinen <otto@seravo.fi>  Mon, 19 Aug 2013 08:51:22 +0300
-
-mariadb-5.5 (5.5.32-1.1) unstable; urgency=low
-
   * Non-maintainer upload
   * Synced with upstream 5.5.32
   * Fine tuned packaging based on MySQL maint team feedback
+  * Fixing build-deps
 
- -- Otto Kekäläinen <otto@seravo.fi>  Fri, 16 Aug 2013 13:51:22 +0300
+ -- Otto Kekäläinen <otto@seravo.fi>  Mon, 19 Aug 2013 08:51:22 +0300
 
-mariadb-5.5 (5.5.29-1.1) unstable; urgency=low
+mariadb-5.5 (5.5.29-1.1) UNRELEASED; urgency=low
 
-  * Non-maintainer upload
+  * Non-maintainer upload that was never accepted
+  * Closes: #565308
   * New rules file made more in the lines of current MySQL packages
   * Refined control file and fixed Lintian warnings
-
- -- Otto Kekäläinen <otto@seravo.fi>  Mon, 04 Mar 2013 17:51:22 +0200
-
-mariadb-5.5 (5.5.29) UNRELEASED; urgency=low
-
   * Updated contents in debian/ to follow Debian standards
   * Deprecated autobuild-dep.sh
 

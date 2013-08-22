@@ -1,6 +1,6 @@
 version=3
 opts="uversionmangle=s/-(rc|beta)/$1/" \
-   ftp://ftp.osuosl.org/pub/mariadb/mariadb-5.5.([\d\.]*(?:-beta|-rc)?)/kvm-tarbake-jaunty-x86/mariadb-5.5.([\d\.]*(?:-beta|-rc)?).tar.gz \
+   ftp://ftp.osuosl.org/pub/mariadb/mariadb-5.5.([\d\.]*(?:-beta|-rc)?)/kvm-tarbake-jaunty-x86/mariadb-([\d\.]*(?:-beta|-rc)?).tar.gz \
    debian uupdate
 
 # Added string "-5.5." in path as MariaDB has release series 5.5 and 10.x in parallel,
