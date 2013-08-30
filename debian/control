@@ -60,7 +60,6 @@ Description: MariaDB database development files
 Package: mariadb-common
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Provides: mysql-common
 Conflicts: mysql-common
 Replaces: mysql-common
 Breaks: mysql-server-5.1 (<< 5.5), mysql-client-5.1 (<< 5.5), mysql-server-core-5.1 (<< 5.5)
