@@ -139,18 +139,13 @@ auto_install-stamp:
 	install -m 0644 $(builddir)/Docs/INFO_BIN $(TMP)/usr/share/doc/mariadb-server-5.5/INFO_BIN
 	
 	# Rename libmysqlclient18.x to libmariadbclient18.x
-	for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.*`; \
+	for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.*`; \
 	do \
 	    source=`basename $$i`; \
 	    dest=`echo $$source | sed -e 's/libmysqlclient/libmariadbclient/'`; \
 	    mv $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/$$source $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/$$dest; \
 	done
-	
-	# mariadb-test
-	mv $(TMP)/usr/mysql-test  $(TMP)/usr/share/mysql
-	
-	# lintian overrides
-	mkdir -p $(TMP)/usr/share/lintian/overrides/
+	touch $@
 
 override_dh_install:
 	dh_install

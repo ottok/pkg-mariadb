@@ -30,7 +30,6 @@ usr/bin/resolve_stack_dump
 usr/bin/resolveip
 usr/share/doc/mariadb-server-5.5/INFO_SRC
 usr/share/doc/mariadb-server-5.5/INFO_BIN
-usr/share/lintian/overrides/mariadb-server-5.5
 usr/share/mysql/debian-start.inc.sh
 usr/share/mysql/echo_stderr
 usr/share/mysql/errmsg-utf8.txt
