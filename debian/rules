@@ -150,7 +150,7 @@ auto_install-stamp:
 	do \
 	    source=`basename $$i`; \
 	    dest=`echo $$source | sed -e 's/libmysqlclient/libmariadbclient/'`; \
-	    mv usr/lib/$(DEB_HOST_MULTIARCH)/$$source usr/lib/$(DEB_HOST_MULTIARCH)/$$dest; \
+	    mv $(TMP)usr/lib/$(DEB_HOST_MULTIARCH)/$$source $(TMP)usr/lib/$(DEB_HOST_MULTIARCH)/$$dest; \
 	done
 
 override_dh_install:
