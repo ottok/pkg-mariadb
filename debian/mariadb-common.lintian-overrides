@@ -1,4 +1,0 @@
-mariadb-common: script-not-executable usr/share/mysql-common/internal-use-only/_etc_init.d_mysql
-mariadb-common: script-not-executable usr/share/mysql-common/internal-use-only/_etc_mysql_debian-start
-# OK in never Debian, includes support for xz
-mariadb-common: data.tar.xz-member-without-dpkg-pre-depends
