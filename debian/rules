@@ -116,15 +116,6 @@ auto_install-stamp:
 	dh_testroot
 	# make install (trailing slash needed for innobase)
 	cd $(builddir) && $(MAKE) install DESTDIR=$(TMP)/
-
-        # Rename libmysqlclient18.x to libmariadbclient18.x
-        for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.*`; \
-	do \
-	    source=`basename $$i`; \
-	    dest=`echo $$source | sed -e's/libmysqlclient/libmariadbclient/'`; \
-	    mv usr/lib/$(DEB_HOST_MULTIARCH)/$$source usr/lib/$(DEB_HOST_MULTIARCH)/$$dest; \
-	done
-
 	# After installing, remove rpath to make lintian happy.
 	set +e; \
 	find ./debian/tmp/ -type f -print0 \
@@ -146,13 +137,21 @@ auto_install-stamp:
 	mkdir -p $(TMP)/usr/share/doc/mariadb-server-5.5
 	install -m 0644 $(builddir)/Docs/INFO_SRC $(TMP)/usr/share/doc/mariadb-server-5.5/INFO_SRC
 	install -m 0644 $(builddir)/Docs/INFO_BIN $(TMP)/usr/share/doc/mariadb-server-5.5/INFO_BIN
-
+	
 	# mariadb-test
 	mv $(TMP)/usr/mysql-test	$(TMP)/usr/share/mysql
-
+	
 	# lintian overrides
 	mkdir -p $(TMP)/usr/share/lintian/overrides/
 	cp debian/mariadb-server-5.5.lintian-overrides $(TMP)/usr/share/lintian/overrides/mariadb-server-5.5
+	
+	# Rename libmysqlclient18.x to libmariadbclient18.x
+	for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.*`; \
+	do \
+	    source=`basename $i`; \
+	    dest=`echo $source | sed -e's/libmysqlclient/libmariadbclient/'`; \
+	    mv usr/lib/$(DEB_HOST_MULTIARCH)/$source usr/lib/$(DEB_HOST_MULTIARCH)/$dest; \
+	done
 
 override_dh_install:
 	dh_install
