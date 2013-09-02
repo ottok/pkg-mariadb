@@ -146,11 +146,11 @@ auto_install-stamp:
 	cp debian/mariadb-server-5.5.lintian-overrides $(TMP)/usr/share/lintian/overrides/mariadb-server-5.5
 	
 	# Rename libmysqlclient18.x to libmariadbclient18.x
-	for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.*`; \
+	for i in `ls $(TMP)usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.*`; \
 	do \
-	    source=`basename $i`; \
-	    dest=`echo $source | sed -e's/libmysqlclient/libmariadbclient/'`; \
-	    mv usr/lib/$(DEB_HOST_MULTIARCH)/$source usr/lib/$(DEB_HOST_MULTIARCH)/$dest; \
+	    source=`basename $$i`; \
+	    dest=`echo $$source | sed -e 's/libmysqlclient/libmariadbclient/'`; \
+	    mv usr/lib/$(DEB_HOST_MULTIARCH)/$$source usr/lib/$(DEB_HOST_MULTIARCH)/$$dest; \
 	done
 
 override_dh_install:
