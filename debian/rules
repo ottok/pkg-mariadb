@@ -116,6 +116,15 @@ auto_install-stamp:
 	dh_testroot
 	# make install (trailing slash needed for innobase)
 	cd $(builddir) && $(MAKE) install DESTDIR=$(TMP)/
+
+        # Rename libmysqlclient18.x to libmariadbclient18.x
+        for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.*`; \
+	do \
+	    source=`basename $$i`; \
+	    dest=`echo $$source | sed -e's/libmysqlclient/libmariadbclient/'`; \
+	    mv usr/lib/$(DEB_HOST_MULTIARCH)/$$source usr/lib/$(DEB_HOST_MULTIARCH)/$$dest; \
+	done
+
 	# After installing, remove rpath to make lintian happy.
 	set +e; \
 	find ./debian/tmp/ -type f -print0 \
