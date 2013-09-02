@@ -145,12 +145,12 @@ auto_install-stamp:
 	    dest=`echo $$source | sed -e 's/libmysqlclient/libmariadbclient/'`; \
 	    mv $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/$$source $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/$$dest; \
 	done
-        
-        # mariadb-test
-        mv $(TMP)/usr/mysql-test  $(TMP)/usr/share/mysql
-        
-        # lintian overrides
-        mkdir -p $(TMP)/usr/share/lintian/overrides/
+	
+	# mariadb-test
+	mv $(TMP)/usr/mysql-test  $(TMP)/usr/share/mysql
+	
+	# lintian overrides
+	mkdir -p $(TMP)/usr/share/lintian/overrides/
 
 override_dh_install:
 	dh_install
