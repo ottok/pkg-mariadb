@@ -43,6 +43,8 @@ else
     TESTSUITE_FAIL_CMD:=true
 endif
 
+SHARED_LIBS_DIR := $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/
+
 BUILDDIR := builddir
 builddir = $(BUILDDIR)
 
@@ -139,12 +141,15 @@ auto_install-stamp:
 	install -m 0644 $(builddir)/Docs/INFO_BIN $(TMP)/usr/share/doc/mariadb-server-5.5/INFO_BIN
 	
 	# Rename libmysqlclient18.x to libmariadbclient18.x
-	for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.*`; \
-	do \
-	    source=`basename $$i`; \
-	    dest=`echo $$source | sed -e 's/libmysqlclient/libmariadbclient/'`; \
-	    mv $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/$$source $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/$$dest; \
-	done
+	# Leave old files in place for -dev packages to use
+	cp $(SHARED_LIBS_DIR)/libmysqlclient.a $(SHARED_LIBS_DIR)/libmariadbclient.a
+	cp $(SHARED_LIBS_DIR)/libmysqlclient.so.18.0.0 $(SHARED_LIBS_DIR)/libmariadbclient.so.18.0.0
+        # Also rename links including link targets
+        # libmysqlclient.so -> libmysqlclient.so.18
+        # libmysqlclient.so.18 -> libmysqlclient.so.18.0.0
+	ln -s libmariadbclient.so.18 $(SHARED_LIBS_DIR)/libmariadbclient.so
+	ln -s libmariadbclient.so.18.0.0 $(SHARED_LIBS_DIR)/libmariadbclient.so.18
+	
 	touch $@
 
 override_dh_install:

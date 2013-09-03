@@ -43,8 +43,9 @@ Package: libmariadbclient-dev
 Architecture: any
 Section: libdevel
 Depends: libmariadbclient18 (= ${binary:Version}), zlib1g-dev, , ${shlibs:Depends}, ${misc:Depends}
-Replaces: libmariadbclient16-dev
-Breaks: libmariadbclient16-dev
+Provides: libmysqlclient18-dev
+Breaks: libmysqlclient18-dev
+Replaces: libmysqlclient18-dev
 Description: MariaDB database development files
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
  server. SQL (Structured Query Language) is the most popular database query
