@@ -191,7 +191,7 @@ override_dh_installcron-arch:
 	dh_installcron --name mysql-server
 
 override_dh_makeshlibs-arch:
-	dh_makeshlibs -plibmariadbclient18 -V'libmariadbclient18 (>= 5.5.1-1)'
+	dh_makeshlibs -V
 
 override_dh_builddeb:
 	dh_builddeb -- -Zxz
