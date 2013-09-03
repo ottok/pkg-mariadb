@@ -165,7 +165,7 @@ libmysqlclient-links-stamp: auto_install-stamp
 	for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.*`; \
 	do \
 	    source=`basename $$i`; \
-	    dest=`echo $$source | sed -e's/libmysqlclient/libmysqlclient_r/'`; \
+	    dest=`echo $$source | sed -e's/libmysqlclient/libmariadbclient_r/'`; \
 	    echo usr/lib/$(DEB_HOST_MULTIARCH)/$$source usr/lib/$(DEB_HOST_MULTIARCH)/$$dest >> debian/libmariadbclient18.links; \
 	done
 	touch $@
