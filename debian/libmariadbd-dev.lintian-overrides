@@ -1,3 +1,5 @@
+libmariadbd-dev: package-name-doesnt-match-sonames libmysqld18
+libmariadbd-dev: non-dev-pkg-with-shlib-symlink usr/lib/x86_64-linux-gnu/libmysqld.so.18 usr/lib/x86_64-linux-gnu/libmysqld.so
 libmariadbd-dev: embedded-library usr/lib/x86_64-linux-gnu/libmysqld.so.18: libmysqlclient
 # OK, newer Debian should support xz
 libmariadbd-dev: data.tar.xz-member-without-dpkg-pre-depends

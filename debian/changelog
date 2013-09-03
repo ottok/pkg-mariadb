@@ -1,4 +1,4 @@
-mariadb-5.5 (5.5.32-1.1) experimental; urgency=low
+mariadb-5.5 (5.5.32-1) unstable; urgency=low
 
   * Closes: #565308
   * Non-maintainer upload

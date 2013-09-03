@@ -12,7 +12,7 @@ Vcs-Bzr: http://bazaar.launchpad.net/~maria-captains/maria/5.5
 Package: libmariadbclient18
 Section: libs
 Architecture: any
-Depends: mysql-common (>= ${source:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: mysql-common, ${shlibs:Depends}, ${misc:Depends}
 Pre-Depends: multiarch-support, ${misc:Pre-Depends}
 Multi-Arch: same
 Description: MariaDB database client library
@@ -108,13 +108,13 @@ Breaks: mariadb-server-5.1 (<< 5.1.60),
     mariadb-server-5.3 (<< 5.3.3),
     mysql-server-5.0,
     mysql-server-core-5.0, mysql-server-core-5.1, mysql-server-core-5.5,
-    mariadb-server-core-5.1, mariadb-server-core-5.2, mariadb-server-core-5.5
+    mariadb-server-core-5.1, mariadb-server-core-5.2
 Replaces: mariadb-server-5.1 (<< 5.1.60),
     mariadb-server-5.2 (<< 5.2.10),
     mariadb-server-5.3 (<< 5.3.3),
     mysql-server-5.0,
     mysql-server-core-5.0, mysql-server-core-5.1, mysql-server-core-5.5,
-    mariadb-server-core-5.1, mariadb-server-core-5.2, mariadb-server-core-5.5
+    mariadb-server-core-5.1, mariadb-server-core-5.2
 Description: MariaDB database core server files
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
  server. SQL (Structured Query Language) is the most popular database query

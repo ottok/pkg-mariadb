@@ -1,7 +1,12 @@
+mariadb-client-5.5: manpage-has-errors-from-man usr/share/man/man1/mysqladmin.1.gz 28: warning [p 1, 1.5i]: can't break line
+mariadb-client-5.5: manpage-has-errors-from-man usr/share/man/man1/mysqldump.1.gz 2047: warning [p 12, 1.3i, div `3tbd2,1', 0.2i]: can't break line
+mariadb-client-5.5: manpage-has-errors-from-man usr/share/man/man8/mysqlmanager.8.gz 1509: warning [p 11, 4.8i, div `3tbd7,1', 5.2i]: can't break line
+mariadb-client-5.5: binary-without-manpage usr/bin/innochecksum
+mariadb-client-5.5: binary-without-manpage usr/bin/mysqlanalyze
+mariadb-client-5.5: binary-without-manpage usr/bin/mysqloptimize
+mariadb-client-5.5: binary-without-manpage usr/bin/mysqlrepair
 mariadb-client-5.5: embedded-library usr/bin/mysqladmin: libmysqlclient
 mariadb-client-5.5: embedded-library usr/bin/mysqldump: libmysqlclient
 mariadb-client-5.5: embedded-library usr/bin/mysqlimport: libmysqlclient
 mariadb-client-5.5: embedded-library usr/bin/mysqlshow: libmysqlclient
 mariadb-client-5.5: embedded-library usr/bin/mysqlslap: libmysqlclient
-# OK in neẃer Debian, includes support for xz
-mariadb-client-5.5: data.tar.xz-member-without-dpkg-pre-depends
