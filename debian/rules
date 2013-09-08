@@ -162,12 +162,14 @@ libmariadbclient-links-stamp: auto_install-stamp
 	# libmysqlclient.so instead of the corresponding versioned lib.
 	echo usr/lib/$(DEB_HOST_MULTIARCH)/libmariadbclient.so usr/lib/$(DEB_HOST_MULTIARCH)/libmariadbclient_r.so > debian/libmariadbclient-dev.links
 	rm -f debian/libmariadbclient18.links
-	for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmariadbclient.so.*`; \
+	for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.*`; \
 	do \
-	    source=`basename $$i`; \
+	    source=`basename $$i | sed -e 's/libmysqlclient/libmariadbclient/'`; \
 	    dest=`echo $$source | sed -e 's/libmariadbclient/libmariadbclient_r/'`; \
 	    echo usr/lib/$(DEB_HOST_MULTIARCH)/$$source usr/lib/$(DEB_HOST_MULTIARCH)/$$dest >> debian/libmariadbclient18.links; \
 	done
+	cp usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.a usr/lib/$(DEB_HOST_MULTIARCH)/libmariadbclient.a
+	cp usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.18.0.0 usr/lib/$(DEB_HOST_MULTIARCH)/libmariadbclient.so.18.0.0
 	touch $@
 
 override_dh_link-arch: libmariadbclient-links-stamp
