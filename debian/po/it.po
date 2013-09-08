@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: mysql-dfsg-5.1 5.1.37 italian debconf templates\n"
 "Report-Msgid-Bugs-To: mariadb-5.5@packages.debian.org\n"
-"POT-Creation-Date: 2012-01-12 13:08+0100\n"
+"POT-Creation-Date: 2013-09-08 21:57+0300\n"
 "PO-Revision-Date: 2009-08-08 11:03+0200\n"
 "Last-Translator: Luca Monducci <luca.mo@tiscali.it>\n"
 "Language-Team: Italian <debian-l10n-italian@lists.debian.org>\n"
@@ -216,3 +216,32 @@ msgstr ""
 "MySQL-5.1 non fornisce più il supporto per i cluster NDB. Si dovrebbe "
 "migrare al nuovo pacchetto mysql-cluster e rimuovere tutte le righe che "
 "iniziano per \"ndb\" da tutti i file di configurazione sotto /etc/mysql/."
+
+#. Type: boolean
+#. Description
+#: ../mariadb-server-5.5.templates:11001
+msgid "MariaDB - An enhanced, drop-in replacement for MySQL"
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../mariadb-server-5.5.templates:11001
+msgid ""
+"MariaDB is a drop-in replacement for MySQL. It will use your current "
+"configuration file (my.cnf) and current databases."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../mariadb-server-5.5.templates:11001
+msgid ""
+"Note that MariaDB has some enhanced features, which do not exist in MySQL "
+"and thus migration back to MySQL might not always work, at least not as "
+"automatically as migrating from MySQL to MariaDB."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../mariadb-server-5.5.templates:11001
+msgid "Are you sure you want to start using MariaDB on this system?"
+msgstr ""
