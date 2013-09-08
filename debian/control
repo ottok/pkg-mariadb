@@ -12,7 +12,7 @@ Vcs-Bzr: http://bazaar.launchpad.net/~maria-captains/maria/5.5
 Package: libmariadbclient18
 Section: libs
 Architecture: any
-Depends: mysql-common, ${shlibs:Depends}, ${misc:Depends}
+Depends: mariadb-common, ${shlibs:Depends}, ${misc:Depends}
 Pre-Depends: multiarch-support, ${misc:Pre-Depends}
 Multi-Arch: same
 Description: MariaDB database client library
@@ -54,9 +54,22 @@ Description: MariaDB database development files
  .
  This package includes development libraries and header files.
 
+Package: mariadb-common
+Architecture: all
+Depends: mysql-common
+Multi-Arch: foreign
+Description: MariaDB common metapackage
+ MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
+ server. SQL (Structured Query Language) is the most popular database query
+ language in the world. The main goals of MariaDB are speed, robustness and
+ ease of use.
+ .
+ This empty metapackage makes the introduction on MariaDB specific
+ configurationfiles easier at any later time.
+
 Package: mariadb-client-core-5.5
 Architecture: any
-Depends: mysql-common, libmariadbclient18 (>= ${source:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: mariadb-common, libmariadbclient18 (>= ${source:Version}), ${shlibs:Depends}, ${misc:Depends}
 Provides: mysql-client-core, mysql-client-core-5.1, mysql-client-core-5.5
 Breaks: mysql-client (<< 5.0.51), mysql-client-5.0,
     mysql-client-5.1 (<< ${source:Version}), mysql-client-5.5 (<< ${source:Version}),
@@ -142,7 +155,7 @@ Package: mariadb-server-5.5
 Architecture: any
 Suggests: tinyca, mailx, mariadb-test
 Recommends: libhtml-template-perl
-Pre-Depends: mysql-common, adduser (>= 3.40), debconf
+Pre-Depends: mariadb-common, adduser (>= 3.40), debconf
 Depends: mariadb-client-5.5 (>= ${source:Version}), libdbi-perl, perl (>= 5.6), ${shlibs:Depends}, ${misc:Depends}, psmisc, passwd, lsb-base (>= 3.0-10), mariadb-server-core-5.5 (>= ${binary:Version})
 Provides: mariadb-server, virtual-mysql-server
 Breaks: mariadb-server (<< ${source:Version}), mysql-server,
