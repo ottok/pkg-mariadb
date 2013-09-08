@@ -97,8 +97,8 @@ with a symlink, then upgraded to a new version of mysql, and then dpkg
 removed your symlink (see #182747 and others).  the mysql packages noticed
 that this happened, and as a workaround have restored it.  however, because
 /var/lib/mysql seems to have been re-created in the meantime, and because
-we don't want to rm -rf something we don't know as much about, we're going
-to leave this unexpected directory here.  if your database looks normal,
+we don't want to rm -rf something we don't know as much about, we are going
+to leave this unexpected directory here.  If your database looks normal,
 and this is not a symlink to your database, you should be able to blow
 this all away.
 
