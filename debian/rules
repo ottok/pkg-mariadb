@@ -63,9 +63,6 @@ override_dh_auto_clean:
 	rm -rf $(BUILDDIR)
 	debconf-updatepo
 
-override_dh_prep:
-        # why do we override this, it might be stopping the cleaning procedures before build
-
 override_dh_auto_configure: configure-stamp
 
 # We explicitly set -DINSTALL_SUPPORTFILESDIR as it is incorrect in upstream
@@ -144,16 +141,15 @@ auto_install-stamp:
 	# Leave old files in place for -dev packages to use
 	cp $(SHARED_LIBS_DIR)/libmysqlclient.a $(SHARED_LIBS_DIR)/libmariadbclient.a
 	cp $(SHARED_LIBS_DIR)/libmysqlclient.so.18.0.0 $(SHARED_LIBS_DIR)/libmariadbclient.so.18.0.0
-        # Also rename links including link targets
-        # libmysqlclient.so -> libmysqlclient.so.18
-        # libmysqlclient.so.18 -> libmysqlclient.so.18.0.0
+	# Also rename links including link targets
+	# libmysqlclient.so -> libmysqlclient.so.18
+	# libmysqlclient.so.18 -> libmysqlclient.so.18.0.0
 	ln -s libmariadbclient.so.18 $(SHARED_LIBS_DIR)/libmariadbclient.so
 	ln -s libmariadbclient.so.18.0.0 $(SHARED_LIBS_DIR)/libmariadbclient.so.18
 	
+	cp $(SHARED_LIBS_DIR)/libmysqlclient.a $(SHARED_LIBS_DIR)/libmariadbclient.a
+	cp $(SHARED_LIBS_DIR)/libmysqlclient.so.18.0.0 $(SHARED_LIBS_DIR)/libmariadbclient.so.18.0.0
 	touch $@
-
-override_dh_install:
-	dh_install
 
 libmariadbclient-links-stamp: auto_install-stamp
 	@echo "RULES.$@"
@@ -168,8 +164,6 @@ libmariadbclient-links-stamp: auto_install-stamp
 	    dest=`echo $$source | sed -e 's/libmariadbclient/libmariadbclient_r/'`; \
 	    echo usr/lib/$(DEB_HOST_MULTIARCH)/$$source usr/lib/$(DEB_HOST_MULTIARCH)/$$dest >> debian/libmariadbclient18.links; \
 	done
-	cp usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.a usr/lib/$(DEB_HOST_MULTIARCH)/libmariadbclient.a
-	cp usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.18.0.0 usr/lib/$(DEB_HOST_MULTIARCH)/libmariadbclient.so.18.0.0
 	touch $@
 
 override_dh_link-arch: libmariadbclient-links-stamp
@@ -178,22 +172,14 @@ override_dh_link-arch: libmariadbclient-links-stamp
 override_dh_installlogrotate-arch:
 	dh_installlogrotate --name mysql-server
 
-override_dh_installchangelogs:
-	dh_installchangelogs
-
 # Start mysql in runlevel 19 before 20 where apache, proftpd etc gets
 # started which might depend on a running database server.
 override_dh_installinit-arch:
 	dh_installinit --name=mysql -- defaults 19 21
 
-override_dh_installdocs:
-	dh_installdocs
 
 override_dh_installcron-arch:
 	dh_installcron --name mysql-server
-
-override_dh_makeshlibs-arch:
-	dh_makeshlibs -V
 
 override_dh_builddeb:
 	dh_builddeb -- -Zxz
