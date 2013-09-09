@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: mysql-dfsg-4.1\n"
 "Report-Msgid-Bugs-To: mariadb-5.5@packages.debian.org\n"
-"POT-Creation-Date: 2013-09-09 10:38+0300\n"
+"POT-Creation-Date: 2013-09-09 12:48+0300\n"
 "PO-Revision-Date: 2004-01-31 19:20GMT\n"
 "Last-Translator: Aleix Badia i Bosch <abadia@ica.es>\n"
 "Language-Team: Debian L10n Catalan <debian-l10n-catalan@lists.debian.org>\n"
@@ -90,35 +90,15 @@ msgid ""
 "the data should be kept."
 msgstr ""
 
-#. Type: boolean
-#. Description
-#: ../mariadb-server-5.5.templates:5001
-#, fuzzy
-#| msgid "Should MySQL start on boot?"
-msgid "Start the MariaDB server on boot?"
-msgstr "Voleu que el MariaDB s'iniciï a l'arrencada ?"
-
-#. Type: boolean
-#. Description
-#: ../mariadb-server-5.5.templates:5001
-#, fuzzy
-msgid ""
-"The MariaDB server can be launched automatically at boot time or manually "
-"with the '/etc/init.d/mysql start' command."
-msgstr ""
-"El MariaDB es pot executar a l'arrencada o només si executeu manualment '/"
-"etc/init.d/mysql start'. Seleccioneu 'sí' si voleu que s'inicialitzi "
-"automàticament."
-
 #. Type: password
 #. Description
-#: ../mariadb-server-5.5.templates:6001
+#: ../mariadb-server-5.5.templates:5001
 msgid "New password for the MariaDB \"root\" user:"
 msgstr ""
 
 #. Type: password
 #. Description
-#: ../mariadb-server-5.5.templates:6001
+#: ../mariadb-server-5.5.templates:5001
 msgid ""
 "While not mandatory, it is highly recommended that you set a password for "
 "the MariaDB administrative \"root\" user."
@@ -126,25 +106,25 @@ msgstr ""
 
 #. Type: password
 #. Description
-#: ../mariadb-server-5.5.templates:6001
+#: ../mariadb-server-5.5.templates:5001
 msgid "If this field is left blank, the password will not be changed."
 msgstr ""
 
 #. Type: password
 #. Description
-#: ../mariadb-server-5.5.templates:7001
+#: ../mariadb-server-5.5.templates:6001
 msgid "Repeat password for the MariaDB \"root\" user:"
 msgstr ""
 
 #. Type: error
 #. Description
-#: ../mariadb-server-5.5.templates:8001
+#: ../mariadb-server-5.5.templates:7001
 msgid "Unable to set password for the MariaDB \"root\" user"
 msgstr ""
 
 #. Type: error
 #. Description
-#: ../mariadb-server-5.5.templates:8001
+#: ../mariadb-server-5.5.templates:7001
 msgid ""
 "An error occurred while setting the password for the MariaDB administrative "
 "user. This may have happened because the account already has a password, or "
@@ -153,13 +133,13 @@ msgstr ""
 
 #. Type: error
 #. Description
-#: ../mariadb-server-5.5.templates:8001
+#: ../mariadb-server-5.5.templates:7001
 msgid "You should check the account's password after the package installation."
 msgstr ""
 
 #. Type: error
 #. Description
-#: ../mariadb-server-5.5.templates:8001
+#: ../mariadb-server-5.5.templates:7001
 msgid ""
 "Please read the /usr/share/doc/mariadb-server-5.5/README.Debian file for "
 "more information."
@@ -167,25 +147,25 @@ msgstr ""
 
 #. Type: error
 #. Description
-#: ../mariadb-server-5.5.templates:9001
+#: ../mariadb-server-5.5.templates:8001
 msgid "Password input error"
 msgstr ""
 
 #. Type: error
 #. Description
-#: ../mariadb-server-5.5.templates:9001
+#: ../mariadb-server-5.5.templates:8001
 msgid "The two passwords you entered were not the same. Please try again."
 msgstr ""
 
 #. Type: error
 #. Description
-#: ../mariadb-server-5.5.templates:10001
+#: ../mariadb-server-5.5.templates:9001
 msgid "NDB Cluster seems to be in use"
 msgstr ""
 
 #. Type: error
 #. Description
-#: ../mariadb-server-5.5.templates:10001
+#: ../mariadb-server-5.5.templates:9001
 msgid ""
 "MySQL-5.1 no longer provides NDB Cluster support. Please migrate to the new "
 "mysql-cluster package and remove all lines starting with \"ndb\" from all "
@@ -194,13 +174,13 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../mariadb-server-5.5.templates:11001
+#: ../mariadb-server-5.5.templates:10001
 msgid "Really migrate to MariaDB?"
 msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../mariadb-server-5.5.templates:11001
+#: ../mariadb-server-5.5.templates:10001
 msgid ""
 "MariaDB is a drop-in replacement for MySQL. It will use your current "
 "configuration file (my.cnf) and current databases."
@@ -208,12 +188,26 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../mariadb-server-5.5.templates:11001
+#: ../mariadb-server-5.5.templates:10001
 msgid ""
 "Note that MariaDB has some enhanced features, which do not exist in MySQL "
 "and thus migration back to MySQL might not always work, at least not as "
 "automatically as migrating from MySQL to MariaDB."
 msgstr ""
+
+#, fuzzy
+#~| msgid "Should MySQL start on boot?"
+#~ msgid "Start the MariaDB server on boot?"
+#~ msgstr "Voleu que el MariaDB s'iniciï a l'arrencada ?"
+
+#, fuzzy
+#~ msgid ""
+#~ "The MariaDB server can be launched automatically at boot time or manually "
+#~ "with the '/etc/init.d/mysql start' command."
+#~ msgstr ""
+#~ "El MariaDB es pot executar a l'arrencada o només si executeu manualment '/"
+#~ "etc/init.d/mysql start'. Seleccioneu 'sí' si voleu que s'inicialitzi "
+#~ "automàticament."
 
 #, fuzzy
 #~ msgid ""

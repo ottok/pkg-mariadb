@@ -44,13 +44,6 @@ _Description: Remove all MariaDB databases?
  recent version or if a different mariadb-server package is already
  using it, the data should be kept.
 
-Template: mysql-server-5.1/start_on_boot
-Type: boolean
-Default: true
-_Description: Start the MariaDB server on boot?
- The MariaDB server can be launched automatically at boot time or manually
- with the '/etc/init.d/mysql start' command.
-
 Template: mysql-server/root_password
 Type: password
 _Description: New password for the MariaDB "root" user:
