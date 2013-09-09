@@ -42,7 +42,7 @@ Description: MariaDB embedded database development files
 Package: libmariadbclient-dev
 Architecture: any
 Section: libdevel
-Depends: libmariadbclient18 (= ${binary:Version}), zlib1g-dev, , ${shlibs:Depends}, ${misc:Depends}
+Depends: libmariadbclient18 (= ${binary:Version}), zlib1g-dev, ${shlibs:Depends}, ${misc:Depends}
 Provides: libmysqlclient18-dev
 Breaks: libmysqlclient18-dev
 Replaces: libmysqlclient18-dev
@@ -56,7 +56,7 @@ Description: MariaDB database development files
 
 Package: mariadb-common
 Architecture: all
-Depends: mysql-common
+Depends: mysql-common, ${misc:Depends}
 Multi-Arch: foreign
 Description: MariaDB common metapackage
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database

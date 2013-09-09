@@ -91,13 +91,11 @@ _Description: NDB Cluster seems to be in use
 Template: mariadb-server/oneway_migration
 Type: boolean
 Default: true
-_Description: MariaDB - An enhanced, drop-in replacement for MySQL
+_Description: Really migrate to MariaDB?
  MariaDB is a drop-in replacement for MySQL. It will use your current
  configuration file (my.cnf) and current databases.
  .
  Note that MariaDB has some enhanced features, which do not exist in MySQL
  and thus migration back to MySQL might not always work, at least not as
  automatically as migrating from MySQL to MariaDB.
- .
- Are you sure you want to start using MariaDB on this system?
 

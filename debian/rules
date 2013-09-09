@@ -149,6 +149,8 @@ auto_install-stamp:
 	# libmysqlclient.so.18 -> libmysqlclient.so.18.0.0
 	ln -s libmariadbclient.so.18 $(SHARED_LIBS_DIR)/libmariadbclient.so
 	ln -s libmariadbclient.so.18.0.0 $(SHARED_LIBS_DIR)/libmariadbclient.so.18
+	# Available in libmariadbclient-dev
+	cp $(SHARED_LIBS_DIR)/libmysqlservices.a $(SHARED_LIBS_DIR)/libmariadbservices.a
 	touch $@
 
 override_dh_installlogrotate-arch:
@@ -158,7 +160,6 @@ override_dh_installlogrotate-arch:
 # started which might depend on a running database server.
 override_dh_installinit-arch:
 	dh_installinit --name=mysql -- defaults 19 21
-
 
 override_dh_installcron-arch:
 	dh_installcron --name mysql-server
