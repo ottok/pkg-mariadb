@@ -151,6 +151,8 @@ auto_install-stamp:
 	ln -s libmariadbclient.so.18.0.0 $(SHARED_LIBS_DIR)/libmariadbclient.so.18
 	# Available in libmariadbclient-dev
 	cp $(SHARED_LIBS_DIR)/libmysqlservices.a $(SHARED_LIBS_DIR)/libmariadbservices.a
+	# mariadb-test
+	mv $(TMP)/usr/mysql-test $(TMP)/usr/share/mysql
 	touch $@
 
 override_dh_installlogrotate-arch:
@@ -163,6 +165,9 @@ override_dh_installinit-arch:
 
 override_dh_installcron-arch:
 	dh_installcron --name mysql-server
+
+override_dh_makeshlibs-arch:
+	dh_makeshlibs -V'libmariadbclient18 (>= 5.5.1-1)' -plibmariadbclient18
 
 override_dh_builddeb:
 	dh_builddeb -- -Zxz
