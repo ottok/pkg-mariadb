@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: po-debconf://mysql-dfsg\n"
 "Report-Msgid-Bugs-To: mariadb-5.5@packages.debian.org\n"
-"POT-Creation-Date: 2013-09-08 21:57+0300\n"
+"POT-Creation-Date: 2013-09-09 10:38+0300\n"
 "PO-Revision-Date: 2006-12-20 21:27+0200\n"
 "Last-Translator: stan ioan-eugen <stan.ieugen@gmail.com>\n"
 "Language-Team: romanian <debian-l10n-romanian@lists.debian.org>\n"
@@ -240,7 +240,7 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../mariadb-server-5.5.templates:11001
-msgid "MariaDB - An enhanced, drop-in replacement for MySQL"
+msgid "Really migrate to MariaDB?"
 msgstr ""
 
 #. Type: boolean
@@ -258,12 +258,6 @@ msgid ""
 "Note that MariaDB has some enhanced features, which do not exist in MySQL "
 "and thus migration back to MySQL might not always work, at least not as "
 "automatically as migrating from MySQL to MariaDB."
-msgstr ""
-
-#. Type: boolean
-#. Description
-#: ../mariadb-server-5.5.templates:11001
-msgid "Are you sure you want to start using MariaDB on this system?"
 msgstr ""
 
 #~ msgid "Cannot upgrade if ISAM tables are present!"

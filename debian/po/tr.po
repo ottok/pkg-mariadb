@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: mysql-dfsg-4.1\n"
 "Report-Msgid-Bugs-To: mariadb-5.5@packages.debian.org\n"
-"POT-Creation-Date: 2013-09-08 21:57+0300\n"
+"POT-Creation-Date: 2013-09-09 10:38+0300\n"
 "PO-Revision-Date: 2004-06-05 08:53+0300\n"
 "Last-Translator: Gürkan Aslan <gurkan@iaslan.com>\n"
 "Language-Team: Turkish <debian-l10n-turkish@lists.debian.org>\n"
@@ -196,7 +196,7 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../mariadb-server-5.5.templates:11001
-msgid "MariaDB - An enhanced, drop-in replacement for MySQL"
+msgid "Really migrate to MariaDB?"
 msgstr ""
 
 #. Type: boolean
@@ -214,12 +214,6 @@ msgid ""
 "Note that MariaDB has some enhanced features, which do not exist in MySQL "
 "and thus migration back to MySQL might not always work, at least not as "
 "automatically as migrating from MySQL to MariaDB."
-msgstr ""
-
-#. Type: boolean
-#. Description
-#: ../mariadb-server-5.5.templates:11001
-msgid "Are you sure you want to start using MariaDB on this system?"
 msgstr ""
 
 #~ msgid ""
