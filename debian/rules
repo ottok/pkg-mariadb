@@ -65,6 +65,9 @@ override_dh_auto_clean:
 
 override_dh_auto_configure: configure-stamp
 
+override_dh_prep:
+        # Don't clean /tmp/ away, it is needed by all binary packages
+
 # We explicitly set -DINSTALL_SUPPORTFILESDIR as it is incorrect in upstream
 # sources (will be fixed in 5.5.30).
 configure-stamp:
@@ -146,28 +149,7 @@ auto_install-stamp:
 	# libmysqlclient.so.18 -> libmysqlclient.so.18.0.0
 	ln -s libmariadbclient.so.18 $(SHARED_LIBS_DIR)/libmariadbclient.so
 	ln -s libmariadbclient.so.18.0.0 $(SHARED_LIBS_DIR)/libmariadbclient.so.18
-	
-	cp $(SHARED_LIBS_DIR)/libmysqlclient.a $(SHARED_LIBS_DIR)/libmariadbclient.a
-	cp $(SHARED_LIBS_DIR)/libmysqlclient.so.18.0.0 $(SHARED_LIBS_DIR)/libmariadbclient.so.18.0.0
 	touch $@
-
-libmariadbclient-links-stamp: auto_install-stamp
-	@echo "RULES.$@"
-	# libmysqlclient_r is now a symlink to libmysqlclient. But it is
-	# created wrong by the cmake build system and points at
-	# libmysqlclient.so instead of the corresponding versioned lib.
-	echo usr/lib/$(DEB_HOST_MULTIARCH)/libmariadbclient.so usr/lib/$(DEB_HOST_MULTIARCH)/libmariadbclient_r.so > debian/libmariadbclient-dev.links
-	rm -f debian/libmariadbclient18.links
-	for i in `ls $(TMP)/usr/lib/$(DEB_HOST_MULTIARCH)/libmysqlclient.so.*`; \
-	do \
-	    source=`basename $$i | sed -e 's/libmysqlclient/libmariadbclient/'`; \
-	    dest=`echo $$source | sed -e 's/libmariadbclient/libmariadbclient_r/'`; \
-	    echo usr/lib/$(DEB_HOST_MULTIARCH)/$$source usr/lib/$(DEB_HOST_MULTIARCH)/$$dest >> debian/libmariadbclient18.links; \
-	done
-	touch $@
-
-override_dh_link-arch: libmariadbclient-links-stamp
-	dh_link
 
 override_dh_installlogrotate-arch:
 	dh_installlogrotate --name mysql-server
