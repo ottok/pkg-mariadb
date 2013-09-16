@@ -1,9 +1,27 @@
-FIND_PACKAGE(Boost 1.40.0)
+MESSAGE(STATUS "Configuring OQGraph")
+FIND_PACKAGE(Boost)
 IF(NOT Boost_FOUND)
+   MESSAGE(STATUS "Boost not found")
   RETURN()
 ENDIF()
 INCLUDE_DIRECTORIES(BEFORE ${Boost_INCLUDE_DIRS})
-SET(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${Boost_INCLUDE_DIRS})
+
+FIND_PACKAGE(Judy)
+IF(NOT Judy_FOUND)
+  MESSAGE(STATUS "Judy not found")
+  include(ExternalProject)
+  ExternalProject_Add(
+    Judy
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Judy
+    CONFIGURE_COMMAND sh bootstrap && sh configure --with-pic --disable-shared
+    UPDATE_COMMAND ""
+    INSTALL_COMMAND ""
+    BUILD_IN_SOURCE 1
+  )
+  SET(Judy_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/Judy/src/obj/.libs/libJudy.a)
+  SET(Judy_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Judy/src)
+ENDIF()
+INCLUDE_DIRECTORIES(${Judy_INCLUDE_DIR})
 
 IF(MSVC)
   # lp:756966 OQGRAPH on Win64 does not compile
@@ -16,6 +34,8 @@ ELSE()
 # See if that works. On old gcc it'll fail because of -fno-rtti
 CHECK_CXX_SOURCE_COMPILES(
 "
+#define BOOST_NO_RTTI 1
+#define BOOST_NO_TYPEID 1
 #include <boost/config.hpp>
 #include <boost/property_map/property_map.hpp>
 int main() { return 0; }
@@ -27,11 +47,19 @@ IF(BOOST_OK)
   IF(MSVC)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
   ELSE(MSVC)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -fno-strict-aliasing")
+    # Fix lp bug 1221555 with -fpermissive, so that errors in gcc 4.7 become warnings for the time being
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -fno-strict-aliasing -fpermissive")
     STRING(REPLACE "-fno-exceptions" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
     STRING(REPLACE "-fno-implicit-templates" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
   ENDIF(MSVC)
 
-  MYSQL_ADD_PLUGIN(oqgraph ha_oqgraph.cc graphcore.cc STORAGE_ENGINE
-                   MODULE_ONLY)
+  ADD_DEFINITIONS(-DBOOST_NO_RTTI=1 -DBOOST_NO_TYPEID=1 -DBOOST_DISABLE_ASSERTS=1)
+
+  MYSQL_ADD_PLUGIN(oqgraph ha_oqgraph.cc graphcore.cc graphcore-graph.cc
+                   oqgraph_shim.cc oqgraph_thunk.cc oqgraph_judy.cc
+                   STORAGE_ENGINE
+                   MODULE_ONLY
+                   LINK_LIBRARIES ${Judy_LIBRARIES})
+ELSE(BOOST_OK)
+  MESSAGE(STATUS "Requisites for OQGraph not met")
 ENDIF(BOOST_OK)
