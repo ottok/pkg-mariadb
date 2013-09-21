@@ -1,4 +1,13 @@
-usr/lib/mysql/plugin/
+usr/lib/mysql/plugin/ha_innodb.so
+usr/lib/mysql/plugin/ha_oqgraph.so
+usr/lib/mysql/plugin/sphinx.so
+usr/lib/mysql/plugin/auth_socket.so
+usr/lib/mysql/plugin/auth_pam.so
+usr/lib/mysql/plugin/semisync_master.so
+usr/lib/mysql/plugin/semisync_slave.so
+usr/lib/mysql/plugin/handlersocket.so
+usr/lib/mysql/plugin/sql_errlog.so
+usr/lib/libhsclient.so.*
 etc/mysql/debian-start
 debian/additions/mysqld_safe_syslog.cnf etc/mysql/conf.d/
 usr/bin/msql2mysql

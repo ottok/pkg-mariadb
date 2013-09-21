@@ -203,3 +203,12 @@ Description: MariaDB database regression test suite (metapackage for the latest 
  This is an empty package that depends on the current "best" version of
  mariadb-test (currently mariadb-test-5.5), as determined by the MariaDB
  maintainers.
+
+Package: mariadb-tokudb-engine-5.5
+Section: database
+Architecture: any
+Depends: mariadb-server-5.5
+Description: TokuDB storage engine for MariaDB
+ TokuDB is a highly scalable, zero maintenance downtime, ACID and MVCC
+ compliant MariaDB Storage Engine that offers powerful indexing-based query
+ acceleration. http://www.tokutek.com/products/tokudb-for-mysql/
