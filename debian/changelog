@@ -1,7 +1,14 @@
-mariadb-5.5 (5.5.32-1) unstable; urgency=low
+mariadb-5.5 (5.5.33a-1) unstable; urgency=low
 
   * Closes: #565308
   * Non-maintainer upload
+  * Synced with upstream 5.5.33a
+
+ -- Otto Kekäläinen <otto@seravo.fi>  Sat, 21 Sept 2013 13:18:22 +0300
+
+mariadb-5.5 (5.5.32-1) UNRELEASED; urgency=low
+
+  * Non-maintainer upload that was never accepted
   * Synced with upstream 5.5.32
   * Fine tuned packaging based on MySQL maint team feedback
   * Fixing build-deps
@@ -11,7 +18,6 @@ mariadb-5.5 (5.5.32-1) unstable; urgency=low
 mariadb-5.5 (5.5.29-1.1) UNRELEASED; urgency=low
 
   * Non-maintainer upload that was never accepted
-  * Closes: #565308
   * New rules file made more in the lines of current MySQL packages
   * Refined control file and fixed Lintian warnings
   * Updated contents in debian/ to follow Debian standards
