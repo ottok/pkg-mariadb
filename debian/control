@@ -139,10 +139,8 @@ Description: MariaDB database core server files
 Package: mariadb-test-5.5
 Architecture: any
 Depends: mariadb-server-5.5 (>= ${source:Version}), mariadb-client-5.5 (>= ${source:Version}), ${misc:Depends}, ${shlibs:Depends}
-Breaks: mariadb-test (<< ${source:Version}),
-    mariadb-test-5.1, mariadb-test-5.2, mariadb-test-5.3
-Replaces: mariadb-test (<< ${source:Version}),
-    mariadb-test-5.1, mariadb-test-5.2, mariadb-test-5.3
+Breaks: mariadb-test (<< ${source:Version}), mysql-testsuite-5.5
+Replaces: mariadb-test (<< ${source:Version}), mysql-testsuite-5.5
 Description: MariaDB database regression test suite
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
  server. SQL (Structured Query Language) is the most popular database query
@@ -199,6 +197,8 @@ Description: MariaDB database client (metapackage depending on the latest versio
 Package: mariadb-test
 Architecture: all
 Depends: mariadb-test-5.5 (>= ${source:Version}), ${misc:Depends}
+Breaks: mysql-testsuite
+Replaces: mysql-testsuite
 Description: MariaDB database regression test suite (metapackage for the latest version)
  This is an empty package that depends on the current "best" version of
  mariadb-test (currently mariadb-test-5.5), as determined by the MariaDB
