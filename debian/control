@@ -6,8 +6,8 @@ Uploaders: Otto Kekäläinen <otto@seravo.fi>, Clint Byrum <clint@ubuntu.com>, N
 Build-Depends: debhelper (>= 9), libaio-dev[linux-any], libncurses5-dev (>= 5.0-6), perl, libwrap0-dev (>= 7.6-8.3), zlib1g-dev (>= 1:1.1.3-5), libreadline-gplv2-dev, po-debconf, psmisc, chrpath, gawk, bison, lsb-release, hardening-wrapper, cmake, gcc-4.4 [any-i386], g++-4.4 [any-i386], libssl-dev
 Standards-Version: 3.9.4
 Homepage: http://mariadb.org/
-Vcs-Browser: http://bazaar.launchpad.net/~maria-captains/maria/5.5/files
-Vcs-Bzr: http://bazaar.launchpad.net/~maria-captains/maria/5.5
+Vcs-Git: git://git.debian.org/git/pkg-mysql/pkg-mariadb.git
+Vcs-Browser: http://git.debian.org/?p=pkg-mysql/pkg-mariadb.git
 
 Package: libmariadbclient18
 Section: libs
