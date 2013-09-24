@@ -18,5 +18,6 @@ mariadb-5.5 (5.5.32-1) UNRELEASED; urgency=low
     x86 assembler in taocrypt on i386 architectures, removing need for
     gcc-4.4 dependency.
   * d/control: Add myself to uploaders.
+  * d/control: Update Vcs fields for new location on git.debian.org.
 
  -- Otto Kekäläinen <otto@seravo.fi>  Wed, 24 Sept 2013 15:09:51 +0300
