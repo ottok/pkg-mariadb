@@ -1,4 +1,4 @@
-mariadb-5.5 (5.5.32-1) unstable; urgency=low
+mariadb-5.5 (5.5.32-1) UNRELEASED; urgency=low
 
   [ Otto Kekäläinen ]
   * Started packages building on top of ealier packages by:
@@ -20,5 +20,6 @@ mariadb-5.5 (5.5.32-1) unstable; urgency=low
   * d/control,rules: Cherry picked fix from mysql-5.5 packaging to disable
     x86 assembler in taocrypt on i386 architectures, removing need for
     gcc-4.4 dependency.
+  * d/control: Add myself to uploaders.
 
  -- Otto Kekäläinen <otto@seravo.fi>  Wed, 24 Sept 2013 15:09:51 +0300
