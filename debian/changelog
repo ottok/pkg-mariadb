@@ -1,20 +1,17 @@
 mariadb-5.5 (5.5.32-1) UNRELEASED; urgency=low
 
   [ Otto Kekäläinen ]
-  * Started packages building on top of ealier packages by:
-  *  * mariadb-5.3 by Sergei Golubchik <serg@askmonty.org>  Mon, 1 Nov 2010
-  *  * mariadb-5.2 by Kristian Nielsen <knielsen@askmonty.org>  Wed, 17 Mar 2010
-  *  * mariadb-5.1 by Peter Lieverdink <peter@openquery.com>  Tue, 29 Sep 2009
-  * Forked from upstream at 5.5.29, later synced to 5.5.32
-  * Deprecated autobuild-dep.sh
-  * Updated contents in debian/ to follow Debian standards
-  * Fixing build-deps
-  * New rules file made more in the lines of current MySQL package
-  * Refined control file and fixed Lintian warnings
-  * Fine tuned packaging based on MySQL maint team feedback
-  * More info at https://wiki.debian.org/Teams/MySQL/MariaDBPlan
-  * Closes: #565308
-  * Non-maintainer upload
+  * Initial package for Debian (Closes: #565308), based on upstream
+    packaging:
+    - mariadb-5.3 by Sergei Golubchik
+    - mariadb-5.2 by Kristian Nielsen
+    - mariadb-5.1 by Peter Lieverdink
+  * Updates based on feedback from Debian MySQL maintainers:
+    - Bring packaging up-to-date inline with mysql-5.5 packaging.
+    - Refine control file and tidy lintian warnings
+    - Rename libmysqlclient18 -> libmariadbclient18.
+    - Add suitable Breaks/Replaces/Provides to support migration
+      to/from mysql-server-5.5.
 
   [ James Page ]
   * d/control,rules: Cherry picked fix from mysql-5.5 packaging to disable
