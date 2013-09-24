@@ -1,5 +1,6 @@
 mariadb-5.5 (5.5.32-1) unstable; urgency=low
 
+  [ Otto Kekäläinen ]
   * Started packages building on top of ealier packages by:
   *  * mariadb-5.3 by Sergei Golubchik <serg@askmonty.org>  Mon, 1 Nov 2010
   *  * mariadb-5.2 by Kristian Nielsen <knielsen@askmonty.org>  Wed, 17 Mar 2010
@@ -14,5 +15,10 @@ mariadb-5.5 (5.5.32-1) unstable; urgency=low
   * More info at https://wiki.debian.org/Teams/MySQL/MariaDBPlan
   * Closes: #565308
   * Non-maintainer upload
+
+  [ James Page ]
+  * d/control,rules: Cherry picked fix from mysql-5.5 packaging to disable
+    x86 assembler in taocrypt on i386 architectures, removing need for
+    gcc-4.4 dependency.
 
  -- Otto Kekäläinen <otto@seravo.fi>  Wed, 24 Sept 2013 15:09:51 +0300

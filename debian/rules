@@ -13,11 +13,11 @@ DEB_BUILD_GNU_SYSTEM ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_SYSTEM)
 DEBVERSION := $(shell dpkg-parsechangelog | awk '/^Version: / { print $$2 }' | sed 's/^.*-//' )
 
 ifneq (,$(filter $(ARCH), i386 kfreebsd-i386 hurd-i386))
-    USE_THIS_GCC_VERSION:=-4.4
+    TAOCRYPT_OPT="-DTAOCRYPT_DISABLE_X86ASM"
 endif
 
-export MYSQL_BUILD_CC=$(DEB_HOST_GNU_TYPE)-gcc$(USE_THIS_GCC_VERSION)
-export MYSQL_BUILD_CXX=$(DEB_HOST_GNU_TYPE)-g++$(USE_THIS_GCC_VERSION)
+export MYSQL_BUILD_CC=$(DEB_HOST_GNU_TYPE)-gcc
+export MYSQL_BUILD_CXX=$(DEB_HOST_GNU_TYPE)-g++
 
 DEB_SOURCE_PACKAGE ?= $(strip $(shell egrep '^Source: ' debian/control | cut -f 2 -d ':'))
 DEB_VERSION ?= $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
@@ -76,9 +76,9 @@ configure-stamp:
 	( test -d $(builddir) || mkdir $(builddir) ) && cd $(builddir) && \
 	sh -c  'PATH=$${MYSQL_BUILD_PATH:-"/bin:/usr/bin"} \
 	    	CC=$${MYSQL_BUILD_CC:-gcc} \
-		CFLAGS=$${MYSQL_BUILD_CFLAGS:-"-O2 -DBIG_JOINS=1 -fno-strict-aliasing"} \
+		CFLAGS=$${MYSQL_BUILD_CFLAGS:-"-O2 -DBIG_JOINS=1 -fno-strict-aliasing ${TAOCRYPT_OPT}"} \
 	    	CXX=$${MYSQL_BUILD_CXX:-g++} \
-	    	CXXFLAGS=$${MYSQL_BUILD_CXXFLAGS:-"-O3 -DBIG_JOINS=1 -felide-constructors -fno-exceptions -fno-rtti -fno-strict-aliasing"} \
+	    	CXXFLAGS=$${MYSQL_BUILD_CXXFLAGS:-"-O3 -DBIG_JOINS=1 -felide-constructors -fno-exceptions -fno-rtti -fno-strict-aliasing ${TAOCRYPT_OPT}"} \
 	    cmake -DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_VERBOSE_MAKEFILE=ON \
 		$(USE_STATIC_MYSQLD) \
