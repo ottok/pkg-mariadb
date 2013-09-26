@@ -28,9 +28,9 @@ Architecture: any
 Section: libdevel
 Pre-Depends: multiarch-support
 Depends: libmariadbclient-dev (>= ${source:Version}), ${misc:Depends}, ${shlibs:Depends}
-Provides: libmysqld-dev
 Breaks: libmysqld-dev
 Replaces: libmysqld-dev
+Provides: libmysqld-dev
 Description: MariaDB embedded database development files
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
  server. SQL (Structured Query Language) is the most popular database query
@@ -43,9 +43,9 @@ Package: libmariadbclient-dev
 Architecture: any
 Section: libdevel
 Depends: libmariadbclient18 (= ${binary:Version}), zlib1g-dev, ${shlibs:Depends}, ${misc:Depends}
-Provides: libmysqlclient-dev
 Breaks: libmysqlclient-dev
 Replaces: libmysqlclient-dev
+Provides: libmysqlclient-dev
 Description: MariaDB database development files
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
  server. SQL (Structured Query Language) is the most popular database query
@@ -70,19 +70,9 @@ Description: MariaDB common metapackage
 Package: mariadb-client-core-5.5
 Architecture: any
 Depends: mariadb-common, libmariadbclient18 (>= ${source:Version}), ${shlibs:Depends}, ${misc:Depends}
-Provides: mysql-client-core, mysql-client-core-5.1, mysql-client-core-5.5
-Breaks: mysql-client (<< 5.0.51), mysql-client-5.0,
-    mysql-client-5.1 (<< ${source:Version}), mysql-client-5.5 (<< ${source:Version}),
-    mysql-client-core-5.1, mysql-client-core-5.5,
-    mariadb-client-5.1, mariadb-client-core-5.1,
-    mariadb-client-5.2, mariadb-client-core-5.2,
-    mariadb-client-5.3, mariadb-client-core-5.3
-Replaces: mysql-client (<< 5.0.51), mysql-client-5.0,
-    mysql-client-5.1, mysql-client-5.5,
-    mysql-client-core-5.1, mysql-client-core-5.5,
-    mariadb-client-5.1, mariadb-client-core-5.1,
-    mariadb-client-5.2, mariadb-client-core-5.2,
-    mariadb-client-5.3, mariadb-client-core-5.3
+Breaks: mysql-client-core-5.5
+Replaces: mysql-client-core-5.5
+Provides: mysql-client-core-5.5
 Description: MariaDB database core client binaries
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
  server. SQL (Structured Query Language) is the most popular database query
@@ -95,14 +85,9 @@ Package: mariadb-client-5.5
 Architecture: any
 Depends: debianutils (>=1.6), libdbi-perl, mariadb-client-core-5.5 (>= ${source:Version}), ${perl:Depends}, ${shlibs:Depends}, ${misc:Depends}
 Recommends: libdbd-mysql-perl (>= 1.2202)
+Breaks: mysql-client-5.5
+Replaces: mysql-client, mysql-client-5.5
 Provides: mariadb-client, virtual-mysql-client
-Breaks: mysql-client, mysql-client-5.0, mysql-client-5.1,
-    mariadb-client (<< ${source:Version}),
-    mariadb-client-5.1, mariadb-client-5.2, mariadb-client-5.3, mysql-client-5.5
-Replaces: mysql-client, mysql-client-5.0, mysql-client-5.1,
-    mysql-client-5.5,
-    mariadb-client (<< ${source:Version}),
-    mariadb-client-5.1, mariadb-client-5.2, mariadb-client-5.3
 Description: MariaDB database client binaries
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
  server. SQL (Structured Query Language) is the most popular database query
@@ -115,19 +100,9 @@ Description: MariaDB database client binaries
 Package: mariadb-server-core-5.5
 Architecture: any
 Depends: mariadb-common, ${shlibs:Depends}, ${misc:Depends}
-Provides: mysql-server-core, mysql-server-core-5.1, mysql-server-core-5.5
-Breaks: mariadb-server-5.1 (<< 5.1.60),
-    mariadb-server-5.2 (<< 5.2.10),
-    mariadb-server-5.3 (<< 5.3.3),
-    mysql-server-5.0,
-    mysql-server-core-5.0, mysql-server-core-5.1, mysql-server-core-5.5,
-    mariadb-server-core-5.1, mariadb-server-core-5.2
-Replaces: mariadb-server-5.1 (<< 5.1.60),
-    mariadb-server-5.2 (<< 5.2.10),
-    mariadb-server-5.3 (<< 5.3.3),
-    mysql-server-5.0,
-    mysql-server-core-5.0, mysql-server-core-5.1, mysql-server-core-5.5,
-    mariadb-server-core-5.1, mariadb-server-core-5.2
+Breaks: mysql-server-core-5.5
+Replaces: mysql-server-core-5.5
+Provides: mysql-server-core-5.5
 Description: MariaDB database core server files
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
  server. SQL (Structured Query Language) is the most popular database query
@@ -155,14 +130,10 @@ Suggests: tinyca, mailx, mariadb-test
 Recommends: libhtml-template-perl
 Pre-Depends: mariadb-common, adduser (>= 3.40), debconf
 Depends: mariadb-client-5.5 (>= ${source:Version}), libdbi-perl, perl (>= 5.6), ${shlibs:Depends}, ${misc:Depends}, psmisc, passwd, lsb-base (>= 3.0-10), mariadb-server-core-5.5 (>= ${binary:Version})
-Provides: mariadb-server, virtual-mysql-server
-Breaks: mariadb-server (<< ${source:Version}), mysql-server,
-    mysql-server-4.1, mysql-server-5.0, mysql-server-5.1, mysql-server-5.5,
-    mariadb-server-5.1, mariadb-server-5.2, mariadb-server-5.3
-Replaces: mariadb-server (<< ${source:Version}), mysql-server (<< ${source:Version}),
-    mysql-server-4.1, mysql-server-5.0, mysql-server-5.1, mysql-server-5.5,
-    mariadb-server-5.1, mariadb-server-5.2, mariadb-server-5.3
+Breaks: mysql-server-5.5
+Replaces: mysql-server-5.5
 Description: MariaDB database server binaries
+Provides: mariadb-server, virtual-mysql-server
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
  server. SQL (Structured Query Language) is the most popular database query
  language in the world. The main goals of MariaDB are speed, robustness and
