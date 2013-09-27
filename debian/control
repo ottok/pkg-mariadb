@@ -132,8 +132,8 @@ Pre-Depends: mariadb-common, adduser (>= 3.40), debconf
 Depends: mariadb-client-5.5 (>= ${source:Version}), libdbi-perl, perl (>= 5.6), ${shlibs:Depends}, ${misc:Depends}, psmisc, passwd, lsb-base (>= 3.0-10), mariadb-server-core-5.5 (>= ${binary:Version})
 Breaks: mysql-server-5.5
 Replaces: mysql-server-5.5
-Description: MariaDB database server binaries
 Provides: mariadb-server, virtual-mysql-server
+Description: MariaDB database server binaries
  MariaDB is a fast, stable and true multi-user, multi-threaded SQL database
  server. SQL (Structured Query Language) is the most popular database query
  language in the world. The main goals of MariaDB are speed, robustness and
