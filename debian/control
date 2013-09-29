@@ -70,7 +70,7 @@ Description: MariaDB common metapackage
 Package: mariadb-client-core-5.5
 Architecture: any
 Depends: mariadb-common, libmariadbclient18 (>= ${source:Version}), ${shlibs:Depends}, ${misc:Depends}
-Breaks: mysql-client-core-5.5
+Breaks: mysql-client-core-5.5, mysql-client-5.5
 Replaces: mysql-client-core-5.5
 Provides: mysql-client-core-5.5
 Description: MariaDB database core client binaries
@@ -85,7 +85,7 @@ Package: mariadb-client-5.5
 Architecture: any
 Depends: debianutils (>=1.6), libdbi-perl, mariadb-client-core-5.5 (>= ${source:Version}), ${perl:Depends}, ${shlibs:Depends}, ${misc:Depends}
 Recommends: libdbd-mysql-perl (>= 1.2202)
-Breaks: mysql-client-5.5
+Breaks: mysql-client-5.5, mysql-client-core-5.5
 Replaces: mysql-client, mysql-client-5.5
 Provides: mariadb-client, virtual-mysql-client
 Description: MariaDB database client binaries
