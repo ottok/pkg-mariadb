@@ -1,2 +1,0 @@
---log=$MYSQLTEST_VARDIR/log/master.log 
---log-output=FILE,TABLE

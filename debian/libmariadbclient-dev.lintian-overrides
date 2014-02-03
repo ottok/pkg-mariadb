@@ -1,2 +1,0 @@
-# OK, newer Debian should support xz
-libmariadbclient-dev: data.tar.xz-member-without-dpkg-pre-depends

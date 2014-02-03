@@ -1,9 +1,0 @@
-*** mariadb-server-5.5.files	2013-02-28 09:41:43.969994431 +0200
---- ../../mariadb-server-5.5.files	2013-02-28 09:41:43.969994431 +0200
-*************** usr/lib/mysql/plugin/
-*** 2,5 ****
-  usr/lib/libhsclient.so.*
-- etc/apparmor.d/usr.sbin.mysqld
-- usr/share/apport/package-hooks/source_mariadb-5.5.py
-  etc/mysql/debian-start
---- 2,3 ----

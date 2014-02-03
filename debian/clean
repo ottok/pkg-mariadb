@@ -1,3 +1,0 @@
-debian/libmariadbclient18.links
-debian/libmariadbclient-dev.links
-debian/mysqld.sym.gz

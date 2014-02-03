@@ -1,2 +1,0 @@
-# in modern Debian this xz support exists, this should not matter anymore
-mariadb-test: data.tar.xz-member-without-dpkg-pre-depends

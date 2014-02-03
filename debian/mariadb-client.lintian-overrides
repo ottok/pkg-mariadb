@@ -1,3 +1,0 @@
-# OK in neẃer Debian, includes support for xz
-mariadb-client: data.tar.xz-member-without-dpkg-pre-depends
-

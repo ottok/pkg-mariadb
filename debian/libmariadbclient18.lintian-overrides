@@ -1,2 +1,0 @@
-libmariadbclient18: embedded-library usr/lib/x86_64-linux-gnu/libmariadbclient.so.18.0.0: libmysqlclient
-libmariadbclient18: ldconfig-symlink-missing-for-shlib usr/lib/x86_64-linux-gnu/libmysqlclient.so.18 usr/lib/x86_64-linux-gnu/libmariadbclient.so.18.0.0 libmysqlclient.so.18

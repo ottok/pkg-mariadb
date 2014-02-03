@@ -1,6 +1,0 @@
-usr/bin/mysql_config
-usr/include/mysql
-usr/lib/*/libmariadbclient.a
-usr/lib/*/libmariadbclient.so
-usr/lib/*/libmariadbservices.a
-usr/share/aclocal/mysql.m4

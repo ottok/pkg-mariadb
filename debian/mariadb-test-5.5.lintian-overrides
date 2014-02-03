@@ -1,7 +1,0 @@
-# OK to have embedded libraries in test suite
-mariadb-test-5.5: embedded-library usr/bin/mysql_client_test: libmysqlclient
-mariadb-test-5.5: embedded-library usr/bin/mysql_client_test_embedded: libmysqlclient
-mariadb-test-5.5: embedded-library usr/bin/mysqltest: libmysqlclient
-mariadb-test-5.5: embedded-library usr/bin/mysqltest_embedded: libmysqlclient
-# in modern Debian this xz support exists, this should not matter anymore
-mariadb-test-5.5: data.tar.xz-member-without-dpkg-pre-depends
